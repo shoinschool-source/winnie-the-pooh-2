@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EPI 構文対戦 (Classroom Battle) - Winnie-the-Pooh Section 2</title>
+    <!-- Supabase JS Client via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --accent-blue: #0284c7;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #fde047;
+            --team1-color: #f43f5e;
+            --team2-color: #38bdf8;
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background-image: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 80%);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 960px;
+            background: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 580px;
+        }
+
+        .header-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .header-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-toggle-btn {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .audio-toggle-btn.muted {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+
+        .round-badge {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .team-scoreboard {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            gap: 0.8rem;
+        }
+
+        .team-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .team-box.left { text-align: left; }
+        .team-box.right { text-align: right; }
+
+        .team-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .team-score-num {
+            font-size: 1.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .team1-text { color: var(--team1-color); }
+        .team2-text { color: var(--team2-color); }
+
+        .vs-badge {
+            background: #334155;
+            color: var(--accent-yellow);
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+        }
+
+        .lobby-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            align-items: center;
+            padding: 0.5rem 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        .input-group {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .input-field {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .tv-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 1.2rem;
+            width: 100%;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .tv-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tv-sidebar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .qr-card {
+            background: #fff;
+            padding: 8px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .qr-card img {
+            width: 130px;
+            height: 130px;
+            display: block;
+        }
+
+        .pods-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 0.75rem;
+            max-height: 380px;
+            overflow-y: auto;
+            width: 100%;
+            padding-right: 4px;
+        }
+
+        @media (min-width: 600px) {
+            .pods-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 850px) {
+            .pods-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .pod-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .pod-card-header {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #38bdf8;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pod-teams-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .pod-team-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            background: rgba(30, 41, 59, 0.6);
+            padding: 0.4rem;
+            border-radius: 6px;
+        }
+
+        .pod-member-tag {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .waiting-room-box {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .assignment-banner {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid var(--accent-yellow);
+            border-radius: 10px;
+            padding: 0.8rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .leaderboard-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.88rem;
+        }
+
+        .team-tag-pill {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-right: 0.4rem;
+        }
+        .pill-team1 { background: rgba(244, 63, 94, 0.25); color: var(--team1-color); border: 1px solid var(--team1-color); }
+        .pill-team2 { background: rgba(56, 189, 248, 0.25); color: var(--team2-color); border: 1px solid var(--team2-color); }
+
+        .grace-banner {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            color: #fff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-align: center;
+            animation: pulse 1s infinite alternate;
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.99); opacity: 0.9; }
+            100% { transform: scale(1.01); opacity: 1; }
+        }
+
+        .scaffold-stage {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .scaffold-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .scaffold-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .sentence-counter {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+        }
+
+        .r4-timer-badge {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .jp-prompt-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            font-size: 1rem;
+            font-weight: 700;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            min-height: 52px;
+        }
+
+        .jp-chunk {
+            color: #ffffff;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 0.25rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            line-height: 1.3;
+        }
+
+        .slot-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            min-height: 64px;
+            padding: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filled-slot {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: 1px solid #38bdf8;
+        }
+
+        .empty-slot {
+            background: rgba(30, 41, 59, 0.6);
+            border: 2px dashed var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .chain-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            min-height: 58px;
+            padding: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .placeholder-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            width: 100%;
+            text-align: center;
+        }
+
+        .tile-tag {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .blank-stage {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .blank-sentence-display {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.5;
+        }
+
+        .blank-word-slot {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.2);
+            border-bottom: 3px solid var(--accent-yellow);
+            color: var(--accent-yellow);
+            padding: 0.1rem 0.8rem;
+            border-radius: 6px;
+            margin: 0 0.3rem;
+        }
+
+        .round3-interaction-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .word-options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
+        }
+
+        @media (min-width: 500px) {
+            .word-options-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        .word-btn {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-bottom: 3px solid var(--accent-green);
+            border-radius: 10px;
+            color: #f1f5f9;
+            padding: 0.6rem 0.4rem;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            position: relative;
+        }
+
+        .word-btn-en { font-size: 0.95rem; font-weight: 700; }
+        .word-btn-jp { font-size: 0.75rem; font-weight: 700; color: var(--accent-yellow); }
+
+        .chunk-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.65rem;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        @media (min-width: 650px) {
+            .chunk-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .grid-btn {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-bottom: 3px solid var(--accent-blue);
+            border-radius: 10px;
+            color: #f1f5f9;
+            padding: 0.6rem 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            line-height: 1.25;
+        }
+
+        .grid-btn.error, .word-btn.error, .r4-block.error {
+            background: #991b1b !important;
+            border-color: var(--accent-red) !important;
+        }
+
+        .grid-btn.cleared {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none !important;
+        }
+
+        .action-btn {
+            width: 100%;
+            max-width: 320px;
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 0.9rem 1.2rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        .action-btn:hover { filter: brightness(1.08); }
+        .action-btn:active { transform: scale(0.98); }
+
+        .action-btn-green {
+            background: var(--accent-green);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-btn-red {
+            background: var(--team1-color);
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-radius: 16px;
+            z-index: 200;
+            padding: 2rem;
+        }
+
+        .countdown-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid var(--accent-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+            margin-top: 1rem;
+        }
+
+        .round-score-badge {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(30, 41, 59, 0.9));
+            border: 1px solid #38bdf8;
+            border-radius: 12px;
+            padding: 0.8rem 1.4rem;
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 0.8rem 0;
+        }
+
+        .round-standings-box {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 0.8rem;
+        }
+
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -45px) scale(1.2); }
+        }
+
+        .floating-score {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.35rem;
+            font-weight: 900;
+            z-index: 1000;
+            animation: floatUpFade 0.85s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
+
+        .floating-plus {
+            color: var(--accent-yellow);
+            text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .floating-minus {
+            color: #f87171;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* EXPANDED 3-COLUMN ARENA (880px Wide & 420px Deep) */
+        .r4-matrix {
+            width: 100%;
+            max-width: 880px;
+            height: 420px;
+            background: #0f172a;
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        @keyframes shakeHard {
+            0% { transform: translate(0, 0); }
+            15% { transform: translate(-8px, -4px); }
+            30% { transform: translate(8px, 4px); }
+            45% { transform: translate(-8px, 4px); }
+            60% { transform: translate(8px, -4px); }
+            75% { transform: translate(-4px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .r4-matrix.shake {
+            animation: shakeHard 0.5s cubic-bezier(.36, .07, .19, .97) both;
+            border-color: var(--accent-red) !important;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.7) !important;
+        }
+
+        /* 3-COLUMN ADAPTIVE BLOCKS (~285px wide each) */
+        .r4-block {
+            position: absolute;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            border: 2px solid #38bdf8;
+            color: #fff;
+            border-radius: 10px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            padding: 8px 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .r4-block:active { transform: scale(0.97); }
+
+        .r4-shelf-container {
+            width: 100%;
+            max-width: 880px;
+            min-height: 58px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px dashed #38bdf8;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            margin: 0 auto;
+        }
+
+        .r4-shelf-tile {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 1px solid #6ee7b7;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .r4-controls-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 880px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header-banner">
+            <div class="header-title">EPI 構文対戦 (Winnie-the-Pooh - Section 2)</div>
+            <div class="header-controls">
+                <button id="audio-toggle-btn" class="audio-toggle-btn" onclick="toggleAudio()">🔊 BGM/SFX ON</button>
+                <div id="round-indicator" class="round-badge" style="display: none;">ラウンド 1</div>
+            </div>
+        </div>
+
+        <!-- Grand Scoreboard: Team 1 vs Team 2 -->
+        <div id="team-scoreboard-hud" class="team-scoreboard" style="display: none;">
+            <div class="team-box left">
+                <span class="team-label team1-text">🔴 チーム 1 (Red)</span>
+                <span id="hud-team1-score" class="team-score-num team1-text">0 pts</span>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="team-box right">
+                <span class="team-label team2-text">🔵 チーム 2 (Blue)</span>
+                <span id="hud-team2-score" class="team-score-num team2-text">0 pts</span>
+            </div>
+        </div>
+
+        <div id="network-error-overlay" class="overlay" style="display: none;">
+            <h2 style="color: var(--accent-red); font-size: 1.8rem; font-weight: 900; margin-bottom: 0.8rem;">⚠️ Supabase 接続エラー</h2>
+            <p id="error-message-text" style="color: var(--text-main); font-size: 1rem; line-height: 1.6; max-width: 480px; margin-bottom: 1.5rem; font-weight: 500;"></p>
+            <button class="action-btn" onclick="location.reload()">再読み込みする</button>
+        </div>
+
+        <div id="lobby-screen" class="lobby-box">
+            <!-- TV / Projector Display View -->
+            <div id="tv-display-view" style="display: flex; width: 100%; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2 id="tv-status-header" style="color: #38bdf8; font-size: 1.2rem; font-weight: 900;">📺 2v2 クラステーブル対戦ロビー</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="action-btn" style="max-width: 140px; padding: 0.6rem 0.4rem; background: #334155; font-size: 0.85rem;" onclick="clearAllDatabasePlayers()">🗑️ 履歴クリア</button>
+                        <button class="action-btn action-btn-red" style="max-width: 180px; padding: 0.6rem 0.8rem; font-size: 0.9rem;" onclick="adminShuffleAndPairPods()">🎲 チーム＆対戦卓 編成</button>
+                        <button id="tv-start-all-btn" class="action-btn action-btn-green" style="max-width: 180px; padding: 0.6rem 0.8rem; font-size: 0.9rem;" onclick="adminStartAllGroups()">🚀 全卓一斉スタート</button>
+                    </div>
+                </div>
+
+                <div class="tv-layout">
+                    <div class="tv-sidebar">
+                        <p style="color: #38bdf8; font-size: 0.8rem; font-weight: 700; text-align: center; line-height: 1.3;">
+                            スマホでQRをスキャンして参加！
+                        </p>
+                        <div class="qr-card">
+                            <img id="tv-qr-img" alt="Join QR Code">
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--accent-yellow); font-weight: 700;" id="tv-player-count-label">参加者: 0人</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; width: 100%;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-align: left;">
+                            ⚔️ 各対戦卓 (2v2 並列ポッド) メンバー状況
+                        </div>
+                        <div class="pods-grid" id="tv-pods-grid">
+                            <div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 1rem; text-align: center;">
+                                参加者が揃ったら「🎲 チーム＆対戦卓 編成」を押してください。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Device Login View -->
+            <div id="student-input-view" style="display: none; flex-direction: column; align-items: center; gap: 1rem; width: 100%;">
+                <h2 style="color: #38bdf8; font-size: 1.3rem; font-weight: 900;">クラス対戦参加</h2>
+                <div class="input-group">
+                    <label>あなたの名前（ニックネーム）</label>
+                    <input type="text" id="player-name-input" class="input-field" placeholder="例: タロウ">
+                </div>
+
+                <button class="action-btn" onclick="enterWaitingRoom()">🚀 待機ロビーに入室する</button>
+            </div>
+        </div>
+
+        <!-- Student Waiting Room View -->
+        <div id="waiting-room-view" style="display: none; flex-direction: column; align-items: center; gap: 1.2rem; padding: 1.5rem 0;">
+            <div class="waiting-room-box">
+                <h3 style="color: #38bdf8; font-size: 1.3rem; font-weight: 900;">待機ロビー</h3>
+                
+                <div id="student-assignment-banner" class="assignment-banner" style="display: none;">
+                    <div id="assignment-team-text" style="font-size: 1.1rem; font-weight: 900;"></div>
+                    <div id="assignment-pod-text" style="font-size: 0.95rem; font-weight: 700; color: #fff;"></div>
+                    <div id="assignment-opponents-text" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+                </div>
+
+                <p id="student-waiting-status" style="color: var(--accent-yellow); font-size: 0.95rem; font-weight: 700;">
+                    ⏳ 先生がチームと対戦卓を編成するのを待っています...
+                </p>
+                
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; width: 100%;">接続中のクラスメイト:</div>
+                <div class="waiting-members-grid" id="waiting-members-list"></div>
+
+                <button id="group-start-btn" class="action-btn action-btn-green" style="display: none;" onclick="startGameForMyPod()">
+                    🚀 私たちの卓で対戦スタート！
+                </button>
+            </div>
+        </div>
+
+        <!-- In-Game View -->
+        <div id="game-content" style="display: none; flex-direction: column; gap: 1rem;">
+            <div id="grace-banner" class="grace-banner">⏳ メンバーがゴール！残り 30 秒でラウンド終了！</div>
+
+            <div class="leaderboard-panel" id="leaderboard-list">
+                <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);" id="current-group-label">🏆 2v2 卓内スピード順位</div>
+            </div>
+
+            <div class="scaffold-stage">
+                <div class="scaffold-header-row">
+                    <div class="scaffold-title" id="scaffold-title-text">ターゲット（日本語訳の順序）</div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <div id="r4-timer-display" class="r4-timer-badge">⏱ 02:00</div>
+                        <div id="sentence-counter" class="sentence-counter">文 1 / 4</div>
+                    </div>
+                </div>
+                <div id="jp-prompt-box" class="jp-prompt-box"></div>
+            </div>
+
+            <div id="active-container"></div>
+            <div id="chunk-grid"></div>
+        </div>
+
+        <!-- Mid-Round Waiting Overlay -->
+        <div id="player-waiting-overlay" class="overlay" style="display: none; padding: 2rem;">
+            <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--accent-green); margin-bottom: 0.5rem;">🎉 あなたはゴールしました！</h2>
+            <p id="player-waiting-placement-text" style="color: var(--accent-yellow); font-size: 1.2rem; font-weight: 800; margin-bottom: 1.2rem;"></p>
+            <div class="round-score-badge" style="margin-bottom: 1.2rem;">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">獲得着順ボーナス</div>
+                    <div id="waiting-bonus-val" style="font-size: 1.5rem; font-weight: 900; color: var(--accent-yellow);">+0 pts</div>
+                </div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.8rem;">対戦卓の他メンバーの終了を待っています...</p>
+            <div id="waiting-room-progress" style="font-size: 1.1rem; font-weight: 800; color: #38bdf8;">完了: 1 / 1 人</div>
+        </div>
+
+        <!-- Student Round Intermission Overlay -->
+        <div id="round-winner-overlay" class="overlay" style="display: none; padding: 1.5rem;">
+            <h2 id="round-winner-title" style="font-size: 1.8rem; font-weight: 900; color: var(--accent-yellow); margin-bottom: 0.2rem;">ラウンド 1 終了！</h2>
+            <p id="round-placement-badge" style="color: #38bdf8; font-size: 1rem; font-weight: 800; margin-bottom: 0.4rem;"></p>
+
+            <div class="round-score-badge" style="flex-direction: column; gap: 0.5rem; padding: 1rem;">
+                <div style="display: flex; justify-content: space-around; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">問題正解点</div>
+                        <div id="round-base-score-text" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">+0 pts</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--border-color); height: 28px;"></div>
+                    <div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">着順ボーナス</div>
+                        <div id="round-bonus-score-text" style="font-size: 1.1rem; font-weight: 800; color: var(--accent-yellow);">+0 pts</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-around; width: 100%; align-items: center; padding-top: 0.2rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">このラウンドの獲得点</div>
+                        <div id="my-round-score-countup" style="font-size: 1.8rem; font-weight: 900; color: var(--accent-green);">0 pts</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--border-color); height: 35px;"></div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">あなたの総スコア</div>
+                        <div id="my-total-score-countup" style="font-size: 1.8rem; font-weight: 900; color: #38bdf8;">0 pts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width: 100%; max-width: 480px; text-align: left; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
+                📊 対戦卓 順位（ラウンド獲得点 / 累計スコア）
+            </div>
+            <div id="round-standings-list" class="round-standings-box"></div>
+
+            <div id="round-next-msg" style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 700;">次のラウンド開始まで少々お待ちください...</div>
+        </div>
+
+        <!-- TV Main Projector Grand Team Intermission Screen -->
+        <div id="tv-round-summary-overlay" class="overlay" style="display: none; padding: 1.5rem; justify-content: flex-start; overflow-y: auto;">
+            <h3 id="tv-summary-round-title" style="color: var(--accent-yellow); font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; margin-top: 0.5rem;">ラウンド 1 終了！結果発表</h3>
+            <h1 id="tv-round-lead-banner" style="font-size: 1.8rem; font-weight: 900; margin: 0.3rem 0 0.8rem 0;"></h1>
+
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; width: 100%; max-width: 760px; align-items: center; background: rgba(15, 23, 42, 0.95); border: 2px solid var(--border-color); border-radius: 14px; padding: 0.8rem 1.2rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.1rem;">
+                    <span style="font-size: 1.1rem; font-weight: 900; color: var(--team1-color);">🔴 チーム 1 (Red)</span>
+                    <span id="tv-summary-t1-score" style="font-size: 2.4rem; font-weight: 900; color: var(--team1-color);">0 pts</span>
+                    <span id="tv-summary-t1-round-pts" style="font-size: 0.85rem; color: #fda4af; font-weight: 800;">+0 pts (このラウンド)</span>
+                </div>
+                <div style="font-size: 1.4rem; font-weight: 900; color: var(--accent-yellow); background: #334155; padding: 0.3rem 0.6rem; border-radius: 8px;">VS</div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.1rem;">
+                    <span style="font-size: 1.1rem; font-weight: 900; color: var(--team2-color);">🔵 チーム 2 (Blue)</span>
+                    <span id="tv-summary-t2-score" style="font-size: 2.4rem; font-weight: 900; color: var(--team2-color);">0 pts</span>
+                    <span id="tv-summary-t2-round-pts" style="font-size: 0.85rem; color: #7dd3fc; font-weight: 800;">+0 pts (このラウンド)</span>
+                </div>
+            </div>
+
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.3rem; width: 100%; max-width: 760px; text-align: left;">
+                ⚔️ 全対戦卓のプレイヤー順位（このラウンドの獲得点 / 累計スコア）
+            </div>
+            <div id="tv-summary-pod-breakdown" style="width: 100%; max-width: 760px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem; margin-bottom: 1rem;"></div>
+
+            <div style="font-size: 0.95rem; color: var(--accent-yellow); font-weight: 800; margin-bottom: 0.5rem;">⏳ 次のラウンド開始まで少々お待ちください...</div>
+        </div>
+
+        <!-- Dedicated Matchup Reveal Overlay -->
+        <div id="matchup-overlay" class="overlay" style="display: none; padding: 1.5rem; z-index: 220; justify-content: center;">
+            <h3 id="matchup-round-badge" style="color: var(--accent-yellow); font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 0.4rem;">
+                ⚔️ ラウンド 1 対戦カード発表
+            </h3>
+            <h2 style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 1rem;">
+                BATTLE MATCHUP
+            </h2>
+            <div id="matchup-cards-container" style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 0.8rem; max-height: 380px; overflow-y: auto;">
+            </div>
+            <div id="matchup-countdown-text" style="font-size: 1rem; color: var(--accent-yellow); font-weight: 900; margin-top: 1rem;">
+                対戦開始まで... 4
+            </div>
+        </div>
+
+        <!-- Instruction Countdown Overlay -->
+        <div id="instruction-overlay" class="overlay" style="display: none;">
+            <h3 id="instr-round-title" style="color: var(--accent-yellow); font-size: 1.1rem; font-weight: 900; margin-bottom: 0.3rem;">ラウンド 1 ルール説明</h3>
+            <h2 id="instr-main-title" style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 1rem;">スロットイン・モード</h2>
+            <div id="instr-body" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 440px; margin-bottom: 1rem; font-weight: 500;"></div>
+            <div style="font-size: 0.9rem; color: #38bdf8; font-weight: 700;">対戦開始まで</div>
+            <div id="countdown-num" class="countdown-circle">10</div>
+        </div>
+
+        <!-- Final Winner Screen -->
+        <div id="end-overlay" class="overlay" style="display: none;">
+            <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--accent-yellow); margin-bottom: 0.5rem;">👑 全ラウンド制覇！</h2>
+            <p id="final-team-winner-banner" style="font-size: 1.4rem; font-weight: 900; margin-bottom: 0.5rem;"></p>
+            <p id="final-rank-msg" style="color: var(--text-main); font-size: 1.05rem; font-weight: 700; margin-bottom: 1.2rem; line-height: 1.6;"></p>
+            <div style="display: flex; gap: 0.8rem; width: 100%; justify-content: center;">
+                <button class="action-btn action-btn-green" onclick="requestPlayAgainToWaitingRoom()">🔄 もう一度遊ぶ（待機室へ）</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initDisplayViews() {
+            const tvView = document.getElementById('tv-display-view');
+            const studentView = document.getElementById('student-input-view');
+            const qrImg = document.getElementById('tv-qr-img');
+            const audioBtn = document.getElementById('audio-toggle-btn');
+
+            if (!isJoinParam) {
+                if (tvView) tvView.style.display = 'flex';
+                if (studentView) studentView.style.display = 'none';
+                if (audioBtn) audioBtn.textContent = '🔊 BGM/SFX ON';
+                if (qrImg) {
+                    const baseUrl = window.location.href.split('?')[0];
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(baseUrl + '?join=true')}`;
+                }
+            } else {
+                if (tvView) tvView.style.display = 'none';
+                if (studentView) studentView.style.display = 'flex';
+                if (audioBtn) audioBtn.textContent = '🔊 SFX ON';
+            }
+        }
+
+        // ========================================================
+        // ROUND 4: 3 WIDE COLUMNS (4 Rows x 3 Cols = 12 Cells)
+        // ========================================================
+        const R4_COLS = 3;
+        const R4_ROWS = 4;
+
+        function initGameRound4() {
+            progress = 0;
+            savePlayers();
+
+            r4ActiveBlocks = [];
+            r4ShelfTiles = [];
+
+            seedR4BottomRow();
+            loadRound4Stage();
+        }
+
+        function seedR4BottomRow() {
+            r4ActiveBlocks = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                let text = R4_ALL_CHUNKS[Math.floor(Math.random() * R4_ALL_CHUNKS.length)];
+                r4ActiveBlocks.push({
+                    id: 'r4_' + Math.random().toString(36).substring(2, 8),
+                    text: text,
+                    col: c,
+                    row: R4_ROWS - 1
+                });
+            }
+        }
+
+        function getR4ChunkCandidate() {
+            const shelfTexts = r4ShelfTiles.map(t => t.text);
+            const boardTexts = r4ActiveBlocks.map(b => b.text);
+
+            if (shelfTexts.length > 0 && Math.random() < 0.70) {
+                for (const sentence of SOURCE_SENTENCES) {
+                    const shelfMatches = sentence.chunks.filter(chk => shelfTexts.includes(chk));
+                    if (shelfMatches.length > 0 && shelfMatches.length < sentence.chunks.length) {
+                        const missingForShelf = sentence.chunks.filter(chk => !shelfTexts.includes(chk));
+                        if (missingForShelf.length > 0) {
+                            return missingForShelf[Math.floor(Math.random() * missingForShelf.length)];
+                        }
+                    }
+                }
+            }
+
+            if (Math.random() < 0.50) {
+                const partialSentences = [];
+                for (const sentence of SOURCE_SENTENCES) {
+                    const presentCount = sentence.chunks.filter(chk => boardTexts.includes(chk) || shelfTexts.includes(chk)).length;
+                    if (presentCount > 0 && presentCount < sentence.chunks.length) {
+                        const missingChunks = sentence.chunks.filter(chk => !boardTexts.includes(chk) && !shelfTexts.includes(chk));
+                        if (missingChunks.length > 0) {
+                            partialSentences.push(...missingChunks);
+                        }
+                    }
+                }
+                if (partialSentences.length > 0) {
+                    return partialSentences[Math.floor(Math.random() * partialSentences.length)];
+                }
+            }
+
+            return R4_ALL_CHUNKS[Math.floor(Math.random() * R4_ALL_CHUNKS.length)];
+        }
+
+        function loadRound4Stage() {
+            const titleEl = document.getElementById('scaffold-title-text');
+            const counterEl = document.getElementById('sentence-counter');
+            const promptBox = document.getElementById('jp-prompt-box');
+            const activeContainer = document.getElementById('active-container');
+            const gridContainer = document.getElementById('chunk-grid');
+            const r4TimerEl = document.getElementById('r4-timer-display');
+
+            if (titleEl) titleEl.textContent = "フリー文構築スコアアタック（制限時間内に英文を作り続けろ！）";
+            if (counterEl) counterEl.textContent = `完成: ${progress} 文`;
+            if (r4TimerEl) r4TimerEl.style.display = 'block';
+
+            if (promptBox) {
+                promptBox.style.display = 'none';
+            }
+
+            if (activeContainer) {
+                activeContainer.className = '';
+                activeContainer.innerHTML = `<div id="r4-matrix" class="r4-matrix"></div>`;
+            }
+
+            if (gridContainer) {
+                gridContainer.className = '';
+                gridContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem; width: 100%;">
+                        <div class="r4-shelf-container" id="r4-shelf">
+                            <span class="placeholder-hint">降ってきたチャンクをタップしてここに並べる...</span>
+                        </div>
+                        <div id="r4-feedback" style="min-height: 20px; font-size: 0.85rem; font-weight: 700; text-align: center;"></div>
+                        <div class="r4-controls-row">
+                            <button type="button" class="action-btn" style="background: #334155; flex: 1;" onclick="clearR4Shelf()">クリア</button>
+                            <button type="button" class="action-btn action-btn-green" style="flex: 2;" onclick="checkR4Sentence()">判定する 🚀</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderR4Game();
+        }
+
+        function startR4GameTimer() {
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            r4SecondsLeft = 120;
+            updateR4TimerDisplay();
+
+            r4GameTimerInterval = setInterval(() => {
+                if (currentRound !== 4 || isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+                r4SecondsLeft--;
+                updateR4TimerDisplay();
+
+                if (r4SecondsLeft <= 10 && r4SecondsLeft > 0) {
+                    sfxTick(false);
+                }
+
+                if (r4SecondsLeft <= 0) {
+                    clearInterval(r4GameTimerInterval);
+                    sfxTick(true);
+                    handleR4TimeExpired();
+                }
+            }, 1000);
+        }
+
+        function updateR4TimerDisplay() {
+            const timerEl = document.getElementById('r4-timer-display');
+            if (!timerEl) return;
+            const mins = Math.floor(Math.max(0, r4SecondsLeft) / 60);
+            const secs = Math.max(0, r4SecondsLeft) % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            timerEl.textContent = `⏱ ${formatted}`;
+            if (r4SecondsLeft <= 15) {
+                timerEl.style.color = 'var(--accent-red)';
+                timerEl.style.borderColor = 'var(--accent-red)';
+            } else {
+                timerEl.style.color = 'var(--accent-yellow)';
+                timerEl.style.borderColor = 'var(--border-color)';
+            }
+        }
+
+        function handleR4TimeExpired() {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished' || parsePlayerState({ status: playerStatus }) === 'finished') return;
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            isInputLocked = true;
+            const feedbackEl = document.getElementById('r4-feedback');
+            if (feedbackEl) {
+                feedbackEl.innerHTML = `<span style="color: var(--accent-red);">⏰ タイムアップ！2分が経過しました</span>`;
+            }
+            handlePlayerFinishedRound('finished');
+        }
+
+        function startR4DropLoop() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            r4DropInterval = setInterval(() => {
+                if (currentRound !== 4 || isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+                spawnR4Block();
+            }, 2600);
+        }
+
+        function spawnR4Block() {
+            let availableCols = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                if (!r4ActiveBlocks.some(b => b.col === c && b.row === 0)) {
+                    availableCols.push(c);
+                }
+            }
+
+            if (availableCols.length === 0) {
+                handleR4Overflow();
+                return;
+            }
+
+            let randomCol = availableCols[Math.floor(Math.random() * availableCols.length)];
+            let chunkText = getR4ChunkCandidate();
+
+            let targetRow = -1;
+            for (let r = R4_ROWS - 1; r >= 0; r--) {
+                if (!r4ActiveBlocks.some(b => b.col === randomCol && b.row === r)) {
+                    targetRow = r;
+                    break;
+                }
+            }
+
+            if (targetRow === -1) {
+                handleR4Overflow();
+                return;
+            }
+
+            r4ActiveBlocks.push({
+                id: 'r4_' + Math.random().toString(36).substring(2, 8),
+                text: chunkText,
+                col: randomCol,
+                row: targetRow
+            });
+
+            renderR4Game();
+
+            if (targetRow === 0) {
+                setTimeout(() => {
+                    handleR4Overflow();
+                }, 350);
+            }
+        }
+
+        function applyR4Gravity() {
+            for (let c = 0; c < R4_COLS; c++) {
+                let colBlocks = r4ActiveBlocks.filter(b => b.col === c);
+                colBlocks.sort((a, b) => b.row - a.row);
+                let writeRow = R4_ROWS - 1;
+                for (let block of colBlocks) {
+                    block.row = writeRow;
+                    writeRow--;
+                }
+            }
+        }
+
+        function handleR4Overflow() {
+            totalScore = Math.max(0, totalScore - 100);
+            roundBaseScore = Math.max(0, roundBaseScore - 100);
+            sfxOverflow();
+            savePlayers();
+
+            const matrixEl = document.getElementById('r4-matrix');
+            if (matrixEl) {
+                showFloatingScore(matrixEl, '-100 盤面あふれ!', false);
+                matrixEl.classList.remove('shake');
+                void matrixEl.offsetWidth;
+                matrixEl.classList.add('shake');
+                setTimeout(() => matrixEl.classList.remove('shake'), 600);
+            }
+
+            const feedbackEl = document.getElementById('r4-feedback');
+            if (feedbackEl) {
+                feedbackEl.innerHTML = `<span style="color: #f87171; font-weight: 800;">💥 盤面がいっぱいになりました！ (-100 pts) 底3ブロックにリセット</span>`;
+                setTimeout(() => { if (feedbackEl) feedbackEl.innerHTML = ''; }, 2500);
+            }
+
+            seedR4BottomRow();
+            r4ShelfTiles = [];
+            renderR4Game();
+        }
+
+        function renderR4Game() {
+            const matrix = document.getElementById('r4-matrix');
+            const shelf = document.getElementById('r4-shelf');
+            if (!matrix || !shelf) return;
+
+            matrix.innerHTML = '';
+
+            let cellW = matrix.clientWidth / R4_COLS;
+            let cellH = matrix.clientHeight / R4_ROWS;
+
+            r4ActiveBlocks.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'r4-block';
+                el.innerText = b.text;
+                el.style.left = (b.col * cellW + 4) + 'px';
+                el.style.top = (b.row * cellH + 4) + 'px';
+                el.style.width = (cellW - 8) + 'px';
+                el.style.height = (cellH - 8) + 'px';
+
+                // Adaptive dynamic font scaling based on string length
+                if (b.text.length > 38) {
+                    el.style.fontSize = '0.78rem';
+                    el.style.lineHeight = '1.2';
+                } else if (b.text.length > 22) {
+                    el.style.fontSize = '0.86rem';
+                    el.style.lineHeight = '1.25';
+                } else {
+                    el.style.fontSize = '0.98rem';
+                    el.style.lineHeight = '1.3';
+                }
+
+                el.onclick = () => handleR4BlockTap(b);
+                matrix.appendChild(el);
+            });
+
+            shelf.innerHTML = '';
+            if (r4ShelfTiles.length === 0) {
+                shelf.innerHTML = '<span class="placeholder-hint">降ってきたチャンクをタップしてここに並べる...</span>';
+            } else {
+                r4ShelfTiles.forEach((tile, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'r4-shelf-tile';
+                    tag.innerText = tile.text;
+                    tag.title = "タップして戻す";
+                    tag.onclick = () => handleR4ShelfTileTap(index);
+                    shelf.appendChild(tag);
+                });
+            }
+        }
+
+        function handleR4BlockTap(block) {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            let idx = r4ActiveBlocks.findIndex(b => b.id === block.id);
+            if (idx === -1) return;
+
+            sfxClick();
+            let moved = r4ActiveBlocks.splice(idx, 1)[0];
+            r4ShelfTiles.push(moved);
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function handleR4ShelfTileTap(tileIndex) {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            sfxClick();
+            let returned = r4ShelfTiles.splice(tileIndex, 1)[0];
+
+            let emptyCols = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                if (!r4ActiveBlocks.some(b => b.col === c && b.row === 0)) emptyCols.push(c);
+            }
+            let targetCol = emptyCols.length > 0 ? emptyCols[0] : 0;
+            returned.col = targetCol;
+            returned.row = 0;
+
+            r4ActiveBlocks.push(returned);
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function clearR4Shelf() {
+            if (isInputLocked || r4ShelfTiles.length === 0) return;
+            sfxClick();
+            r4ShelfTiles.forEach(t => {
+                t.row = 0;
+                t.col = Math.floor(Math.random() * R4_COLS);
+                r4ActiveBlocks.push(t);
+            });
+            r4ShelfTiles = [];
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function checkR4Sentence() {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            const feedbackEl = document.getElementById('r4-feedback');
+
+            const matched = SOURCE_SENTENCES.find(s => 
+                s.chunks.length === r4ShelfTiles.length &&
+                s.chunks.every((chk, idx) => r4ShelfTiles[idx].text === chk)
+            );
+
+            if (matched) {
+                totalScore += 150;
+                roundBaseScore += 150;
+                progress++;
+                sfxCorrect();
+                savePlayers();
+
+                if (feedbackEl) {
+                    showFloatingScore(feedbackEl, '+150 正解!', true);
+                    feedbackEl.innerHTML = `<span style="color: var(--accent-green);">🎉 正解！文を完成させました！ (+150 pts)</span>`;
+                }
+
+                const counterEl = document.getElementById('sentence-counter');
+                if (counterEl) counterEl.textContent = `完成: ${progress} 文`;
+
+                r4ShelfTiles = [];
+                renderR4Game();
+
+                setTimeout(() => {
+                    if (feedbackEl) feedbackEl.innerHTML = '';
+                }, 1200);
+            } else {
+                totalScore = Math.max(0, totalScore - 15);
+                roundBaseScore = Math.max(0, roundBaseScore - 15);
+                sfxError();
+                savePlayers();
+                if (feedbackEl) {
+                    showFloatingScore(feedbackEl, '-15', false);
+                    feedbackEl.innerHTML = `<span style="color: #f87171;">❌ 順序または組み合わせが違います！</span>`;
+                }
+            }
+        }
+
+        // ========================================================
+        // 6. FINAL TEAM WINNER & COMPLETION SCREEN
+        // ========================================================
+        async function showFinalScreen() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+            if (intermissionTimeout) clearTimeout(intermissionTimeout);
+            stopBGM();
+            sfxVictory();
+            await fetchPlayers();
+
+            const gameContent = document.getElementById('game-content');
+            const endOverlay = document.getElementById('end-overlay');
+            const finalTeamBanner = document.getElementById('final-team-winner-banner');
+            const finalMsg = document.getElementById('final-rank-msg');
+            const roundWinnerOverlay = document.getElementById('round-winner-overlay');
+            const tvIntermission = document.getElementById('tv-round-summary-overlay');
+            const matchupOverlay = document.getElementById('matchup-overlay');
+
+            if (roundWinnerOverlay) roundWinnerOverlay.style.display = 'none';
+            if (tvIntermission) tvIntermission.style.display = 'none';
+            if (matchupOverlay) matchupOverlay.style.display = 'none';
+
+            const { t1: t1Total, t2: t2Total } = calculateCurrentTeamScores();
+
+            if (finalTeamBanner) {
+                if (t1Total > t2Total) {
+                    finalTeamBanner.innerHTML = `<span class="team1-text">🏆 チーム1 (Red) の総合勝利！ (${t1Total} pts vs ${t2Total} pts)</span>`;
+                } else if (t2Total > t1Total) {
+                    finalTeamBanner.innerHTML = `<span class="team2-text">🏆 チーム2 (Blue) の総合勝利！ (${t2Total} pts vs ${t1Total} pts)</span>`;
+                } else {
+                    finalTeamBanner.innerHTML = `<span style="color:var(--accent-yellow);">🤝 同点引き分け！ (${t1Total} pts)</span>`;
+                }
+            }
+
+            if (!isJoinParam) {
+                if (finalMsg) {
+                    finalMsg.innerHTML = `
+                        全対戦卓の激闘が終了しました！<br>
+                        🔴 チーム1: <strong>${t1Total} pts</strong> | 🔵 チーム2: <strong>${t2Total} pts</strong>
+                    `;
+                }
+            } else {
+                const podPlayers = allPlayers
+                    .filter(p => p.room === roomCode && !p.id.startsWith('signal_'))
+                    .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                const myIndex = podPlayers.findIndex(p => p.id === myId);
+                const myRank = myIndex !== -1 ? myIndex + 1 : 1;
+                const myFinalScore = (myIndex !== -1 && podPlayers[myIndex].score !== undefined) ? podPlayers[myIndex].score : totalScore;
+
+                if (finalMsg) {
+                    finalMsg.innerHTML = `
+                        あなたの所属: <strong>${myTeam === 'team-1' ? '🔴 チーム1' : '🔵 チーム2'}</strong><br>
+                        卓内個人順位: <strong>${myRank}位 / ${podPlayers.length}人</strong><br>
+                        個人最終スコア: <span style="font-size: 1.3rem; color: var(--accent-green); font-weight: 800;">${myFinalScore} pts</span>
+                    `;
+                }
+            }
+
+            if (gameContent) gameContent.style.display = 'none';
+            if (endOverlay) endOverlay.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
