@@ -1,0 +1,3658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EPI 構文対戦 (Classroom Battle) - Winnie-the-Pooh Section 2</title>
+    <!-- Supabase JS Client via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Client-Side Standalone QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --accent-blue: #0284c7;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #fde047;
+            --team1-color: #f43f5e;
+            --team2-color: #38bdf8;
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background-image: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 80%);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 960px;
+            background: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 580px;
+        }
+
+        .header-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .header-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-toggle-btn {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .audio-toggle-btn.muted {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+
+        .round-badge {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .team-scoreboard {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            gap: 0.8rem;
+        }
+
+        .team-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .team-box.left { text-align: left; }
+        .team-box.right { text-align: right; }
+
+        .team-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .team-score-num {
+            font-size: 1.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .team1-text { color: var(--team1-color); }
+        .team2-text { color: var(--team2-color); }
+
+        .vs-badge {
+            background: #334155;
+            color: var(--accent-yellow);
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+        }
+
+        .lobby-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            align-items: center;
+            padding: 0.5rem 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        .input-group {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .input-field {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .tv-layout {
+            display: grid;
+            grid-template-columns: 270px 1fr;
+            gap: 1.2rem;
+            width: 100%;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .tv-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tv-sidebar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .qr-card {
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            min-width: 150px;
+            min-height: 150px;
+        }
+
+        .qr-card canvas, .qr-card img {
+            display: block !important;
+            margin: 0 auto;
+        }
+
+        .pods-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 0.75rem;
+            max-height: 380px;
+            overflow-y: auto;
+            width: 100%;
+            padding-right: 4px;
+        }
+
+        @media (min-width: 600px) {
+            .pods-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 850px) {
+            .pods-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .pod-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .pod-card-header {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #38bdf8;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pod-teams-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .pod-team-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            background: rgba(30, 41, 59, 0.6);
+            padding: 0.4rem;
+            border-radius: 6px;
+        }
+
+        .pod-member-tag {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .waiting-room-box {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .waiting-members-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .waiting-tag {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .assignment-banner {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid var(--accent-yellow);
+            border-radius: 10px;
+            padding: 0.8rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .leaderboard-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.88rem;
+        }
+
+        .team-tag-pill {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-right: 0.4rem;
+        }
+        .pill-team1 { background: rgba(244, 63, 94, 0.25); color: var(--team1-color); border: 1px solid var(--team1-color); }
+        .pill-team2 { background: rgba(56, 189, 248, 0.25); color: var(--team2-color); border: 1px solid var(--team2-color); }
+
+        .grace-banner {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            color: #fff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-align: center;
+            animation: pulse 1s infinite alternate;
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.99); opacity: 0.9; }
+            100% { transform: scale(1.01); opacity: 1; }
+        }
+
+        .scaffold-stage {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .scaffold-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .scaffold-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .sentence-counter {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+        }
+
+        .r4-timer-badge {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .jp-prompt-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            font-size: 1rem;
+            font-weight: 700;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            min-height: 52px;
+        }
+
+        .jp-chunk {
+            color: #ffffff;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 0.25rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            line-height: 1.3;
+        }
+
+        .slot-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            min-height: 64px;
+            padding: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filled-slot {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: 1px solid #38bdf8;
+        }
+
+        .empty-slot {
+            background: rgba(30, 41, 59, 0.6);
+            border: 2px dashed var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .chain-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            min-height: 58px;
+            padding: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .placeholder-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            width: 100%;
+            text-align: center;
+        }
+
+        .tile-tag {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .blank-stage {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .blank-sentence-display {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.5;
+        }
+
+        .blank-word-slot {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.2);
+            border-bottom: 3px solid var(--accent-yellow);
+            color: var(--accent-yellow);
+            padding: 0.1rem 0.8rem;
+            border-radius: 6px;
+            margin: 0 0.3rem;
+        }
+
+        .round3-interaction-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .word-options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
+        }
+
+        @media (min-width: 500px) {
+            .word-options-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        .word-btn {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-bottom: 3px solid var(--accent-green);
+            border-radius: 10px;
+            color: #f1f5f9;
+            padding: 0.6rem 0.4rem;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            position: relative;
+        }
+
+        .word-btn-en { font-size: 0.95rem; font-weight: 700; }
+        .word-btn-jp { font-size: 0.75rem; font-weight: 700; color: var(--accent-yellow); }
+
+        .chunk-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.65rem;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        @media (min-width: 650px) {
+            .chunk-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .grid-btn {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-bottom: 3px solid var(--accent-blue);
+            border-radius: 10px;
+            color: #f1f5f9;
+            padding: 0.6rem 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            line-height: 1.25;
+        }
+
+        .grid-btn.error, .word-btn.error, .r4-block.error {
+            background: #991b1b !important;
+            border-color: var(--accent-red) !important;
+        }
+
+        .grid-btn.cleared {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none !important;
+        }
+
+        .action-btn {
+            width: 100%;
+            max-width: 320px;
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 0.9rem 1.2rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        .action-btn:hover { filter: brightness(1.08); }
+        .action-btn:active { transform: scale(0.98); }
+
+        .action-btn-green {
+            background: var(--accent-green);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-btn-red {
+            background: var(--team1-color);
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-radius: 16px;
+            z-index: 200;
+            padding: 2rem;
+        }
+
+        .countdown-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid var(--accent-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+            margin-top: 1rem;
+        }
+
+        .round-score-badge {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(30, 41, 59, 0.9));
+            border: 1px solid #38bdf8;
+            border-radius: 12px;
+            padding: 0.8rem 1.4rem;
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 0.8rem 0;
+        }
+
+        .round-standings-box {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 0.8rem;
+        }
+
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -45px) scale(1.2); }
+        }
+
+        .floating-score {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.35rem;
+            font-weight: 900;
+            z-index: 1000;
+            animation: floatUpFade 0.85s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
+
+        .floating-plus {
+            color: var(--accent-yellow);
+            text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .floating-minus {
+            color: #f87171;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* EXPANDED 3-COLUMN ARENA (880px Wide & 420px Deep) */
+        .r4-matrix {
+            width: 100%;
+            max-width: 880px;
+            height: 420px;
+            background: #0f172a;
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        @keyframes shakeHard {
+            0% { transform: translate(0, 0); }
+            15% { transform: translate(-8px, -4px); }
+            30% { transform: translate(8px, 4px); }
+            45% { transform: translate(-8px, 4px); }
+            60% { transform: translate(8px, -4px); }
+            75% { transform: translate(-4px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .r4-matrix.shake {
+            animation: shakeHard 0.5s cubic-bezier(.36, .07, .19, .97) both;
+            border-color: var(--accent-red) !important;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.7) !important;
+        }
+
+        /* 3-COLUMN ADAPTIVE BLOCKS (~285px wide each) */
+        .r4-block {
+            position: absolute;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            border: 2px solid #38bdf8;
+            color: #fff;
+            border-radius: 10px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            padding: 8px 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .r4-block:active { transform: scale(0.97); }
+
+        .r4-shelf-container {
+            width: 100%;
+            max-width: 880px;
+            min-height: 58px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px dashed #38bdf8;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            margin: 0 auto;
+        }
+
+        .r4-shelf-tile {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 1px solid #6ee7b7;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .r4-controls-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 880px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header-banner">
+            <div class="header-title">EPI 構文対戦 (Winnie-the-Pooh - Section 2)</div>
+            <div class="header-controls">
+                <button id="audio-toggle-btn" class="audio-toggle-btn" onclick="toggleAudio()">🔊 BGM/SFX ON</button>
+                <div id="round-indicator" class="round-badge" style="display: none;">ラウンド 1</div>
+            </div>
+        </div>
+
+        <!-- Grand Scoreboard: Team 1 vs Team 2 -->
+        <div id="team-scoreboard-hud" class="team-scoreboard" style="display: none;">
+            <div class="team-box left">
+                <span class="team-label team1-text">🔴 チーム 1 (Red)</span>
+                <span id="hud-team1-score" class="team-score-num team1-text">0 pts</span>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="team-box right">
+                <span class="team-label team2-text">🔵 チーム 2 (Blue)</span>
+                <span id="hud-team2-score" class="team-score-num team2-text">0 pts</span>
+            </div>
+        </div>
+
+        <div id="network-error-overlay" class="overlay" style="display: none;">
+            <h2 style="color: var(--accent-red); font-size: 1.8rem; font-weight: 900; margin-bottom: 0.8rem;">⚠️ Supabase 接続エラー</h2>
+            <p id="error-message-text" style="color: var(--text-main); font-size: 1rem; line-height: 1.6; max-width: 480px; margin-bottom: 1.5rem; font-weight: 500;"></p>
+            <button class="action-btn" onclick="location.reload()">再読み込みする</button>
+        </div>
+
+        <div id="lobby-screen" class="lobby-box">
+            <!-- TV / Projector Display View -->
+            <div id="tv-display-view" style="display: flex; width: 100%; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2 id="tv-status-header" style="color: #38bdf8; font-size: 1.2rem; font-weight: 900;">📺 2v2 クラステーブル対戦ロビー</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="action-btn" style="max-width: 140px; padding: 0.6rem 0.4rem; background: #334155; font-size: 0.85rem;" onclick="clearAllDatabasePlayers()">🗑️ 履歴クリア</button>
+                        <button class="action-btn action-btn-red" style="max-width: 180px; padding: 0.6rem 0.8rem; font-size: 0.9rem;" onclick="adminShuffleAndPairPods()">🎲 チーム＆対戦卓 編成</button>
+                        <button id="tv-start-all-btn" class="action-btn action-btn-green" style="max-width: 180px; padding: 0.6rem 0.8rem; font-size: 0.9rem;" onclick="adminStartAllGroups()">🚀 全卓一斉スタート</button>
+                    </div>
+                </div>
+
+                <div class="tv-layout">
+                    <div class="tv-sidebar">
+                        <p style="color: #38bdf8; font-size: 0.8rem; font-weight: 700; text-align: center; line-height: 1.3;">
+                            スマホでQRをスキャンして参加！
+                        </p>
+                        <div class="qr-card">
+                            <div id="tv-qrcode-container"></div>
+                            <img id="tv-qr-img" style="display:none; width: 130px; height: 130px;" alt="Join QR Code">
+                        </div>
+
+                        <!-- Local environment warning if run via file:/// or localhost -->
+                        <div id="local-env-warning" style="display:none; color: #f87171; font-size: 0.72rem; line-height: 1.35; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; padding: 6px; text-align: left; width: 100%;"></div>
+
+                        <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all; text-align: center; width: 100%;" id="tv-join-url-text"></div>
+
+                        <div style="width: 100%; display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); text-align: left;">URL直接編集 / ホストURL変更:</label>
+                            <input type="text" id="custom-join-url-input" class="input-field" style="padding: 0.4rem; font-size: 0.75rem;" placeholder="https://..." oninput="updateQrCodeFromInput(this.value)">
+                        </div>
+
+                        <div style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 800; margin-top: 4px;" id="tv-player-count-label">参加者: 0人</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; width: 100%;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-align: left;">
+                            ⚔️ 各対戦卓 (2v2 並列ポッド) メンバー状況
+                        </div>
+                        <div class="pods-grid" id="tv-pods-grid">
+                            <div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 1rem; text-align: center;">
+                                参加者が揃ったら「🎲 チーム＆対戦卓 編成」を押してください。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Device Login View -->
+            <div id="student-input-view" style="display: none; flex-direction: column; align-items: center; gap: 1rem; width: 100%;">
+                <h2 style="color: #38bdf8; font-size: 1.3rem; font-weight: 900;">クラス対戦参加</h2>
+                <div class="input-group">
+                    <label>あなたの名前（ニックネーム）</label>
+                    <input type="text" id="player-name-input" class="input-field" placeholder="例: タロウ">
+                </div>
+
+                <button class="action-btn" onclick="enterWaitingRoom()">🚀 待機ロビーに入室する</button>
+            </div>
+        </div>
+
+        <!-- Student Waiting Room View -->
+        <div id="waiting-room-view" style="display: none; flex-direction: column; align-items: center; gap: 1.2rem; padding: 1.5rem 0;">
+            <div class="waiting-room-box">
+                <h3 style="color: #38bdf8; font-size: 1.3rem; font-weight: 900;">待機ロビー</h3>
+                
+                <div id="student-assignment-banner" class="assignment-banner" style="display: none;">
+                    <div id="assignment-team-text" style="font-size: 1.1rem; font-weight: 900;"></div>
+                    <div id="assignment-pod-text" style="font-size: 0.95rem; font-weight: 700; color: #fff;"></div>
+                    <div id="assignment-opponents-text" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+                </div>
+
+                <p id="student-waiting-status" style="color: var(--accent-yellow); font-size: 0.95rem; font-weight: 700;">
+                    ⏳ 先生がチームと対戦卓を編成するのを待っています...
+                </p>
+                
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; width: 100%;">接続中のクラスメイト:</div>
+                <div class="waiting-members-grid" id="waiting-members-list"></div>
+
+                <button id="group-start-btn" class="action-btn action-btn-green" style="display: none;" onclick="startGameForMyPod()">
+                    🚀 私たちの卓で対戦スタート！
+                </button>
+            </div>
+        </div>
+
+        <!-- In-Game View -->
+        <div id="game-content" style="display: none; flex-direction: column; gap: 1rem;">
+            <div id="grace-banner" class="grace-banner">⏳ メンバーがゴール！残り 30 秒でラウンド終了！</div>
+
+            <div class="leaderboard-panel" id="leaderboard-list">
+                <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);" id="current-group-label">🏆 2v2 卓内スピード順位</div>
+            </div>
+
+            <div class="scaffold-stage">
+                <div class="scaffold-header-row">
+                    <div class="scaffold-title" id="scaffold-title-text">ターゲット（日本語訳の順序）</div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <div id="r4-timer-display" class="r4-timer-badge">⏱ 02:00</div>
+                        <div id="sentence-counter" class="sentence-counter">文 1 / 4</div>
+                    </div>
+                </div>
+                <div id="jp-prompt-box" class="jp-prompt-box"></div>
+            </div>
+
+            <div id="active-container"></div>
+            <div id="chunk-grid"></div>
+        </div>
+
+        <!-- Mid-Round Waiting Overlay -->
+        <div id="player-waiting-overlay" class="overlay" style="display: none; padding: 2rem;">
+            <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--accent-green); margin-bottom: 0.5rem;">🎉 あなたはゴールしました！</h2>
+            <p id="player-waiting-placement-text" style="color: var(--accent-yellow); font-size: 1.2rem; font-weight: 800; margin-bottom: 1.2rem;"></p>
+            <div class="round-score-badge" style="margin-bottom: 1.2rem;">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">獲得着順ボーナス</div>
+                    <div id="waiting-bonus-val" style="font-size: 1.5rem; font-weight: 900; color: var(--accent-yellow);">+0 pts</div>
+                </div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.8rem;">対戦卓の他メンバーの終了を待っています...</p>
+            <div id="waiting-room-progress" style="font-size: 1.1rem; font-weight: 800; color: #38bdf8;">完了: 1 / 1 人</div>
+        </div>
+
+        <!-- Student Round Intermission Overlay -->
+        <div id="round-winner-overlay" class="overlay" style="display: none; padding: 1.5rem;">
+            <h2 id="round-winner-title" style="font-size: 1.8rem; font-weight: 900; color: var(--accent-yellow); margin-bottom: 0.2rem;">ラウンド 1 終了！</h2>
+            <p id="round-placement-badge" style="color: #38bdf8; font-size: 1rem; font-weight: 800; margin-bottom: 0.4rem;"></p>
+
+            <div class="round-score-badge" style="flex-direction: column; gap: 0.5rem; padding: 1rem;">
+                <div style="display: flex; justify-content: space-around; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">問題正解点</div>
+                        <div id="round-base-score-text" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">+0 pts</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--border-color); height: 28px;"></div>
+                    <div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">着順ボーナス</div>
+                        <div id="round-bonus-score-text" style="font-size: 1.1rem; font-weight: 800; color: var(--accent-yellow);">+0 pts</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-around; width: 100%; align-items: center; padding-top: 0.2rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">このラウンドの獲得点</div>
+                        <div id="my-round-score-countup" style="font-size: 1.8rem; font-weight: 900; color: var(--accent-green);">0 pts</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--border-color); height: 35px;"></div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">あなたの総スコア</div>
+                        <div id="my-total-score-countup" style="font-size: 1.8rem; font-weight: 900; color: #38bdf8;">0 pts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width: 100%; max-width: 480px; text-align: left; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
+                📊 対戦卓 順位（ラウンド獲得点 / 累計スコア）
+            </div>
+            <div id="round-standings-list" class="round-standings-box"></div>
+
+            <div id="round-next-msg" style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 700;">次のラウンド開始まで少々お待ちください...</div>
+        </div>
+
+        <!-- TV Main Projector Grand Team Intermission Screen -->
+        <div id="tv-round-summary-overlay" class="overlay" style="display: none; padding: 1.5rem; justify-content: flex-start; overflow-y: auto;">
+            <h3 id="tv-summary-round-title" style="color: var(--accent-yellow); font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; margin-top: 0.5rem;">ラウンド 1 終了！結果発表</h3>
+            <h1 id="tv-round-lead-banner" style="font-size: 1.8rem; font-weight: 900; margin: 0.3rem 0 0.8rem 0;"></h1>
+
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; width: 100%; max-width: 760px; align-items: center; background: rgba(15, 23, 42, 0.95); border: 2px solid var(--border-color); border-radius: 14px; padding: 0.8rem 1.2rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.1rem;">
+                    <span style="font-size: 1.1rem; font-weight: 900; color: var(--team1-color);">🔴 チーム 1 (Red)</span>
+                    <span id="tv-summary-t1-score" style="font-size: 2.4rem; font-weight: 900; color: var(--team1-color);">0 pts</span>
+                    <span id="tv-summary-t1-round-pts" style="font-size: 0.85rem; color: #fda4af; font-weight: 800;">+0 pts (このラウンド)</span>
+                </div>
+                <div style="font-size: 1.4rem; font-weight: 900; color: var(--accent-yellow); background: #334155; padding: 0.3rem 0.6rem; border-radius: 8px;">VS</div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.1rem;">
+                    <span style="font-size: 1.1rem; font-weight: 900; color: var(--team2-color);">🔵 チーム 2 (Blue)</span>
+                    <span id="tv-summary-t2-score" style="font-size: 2.4rem; font-weight: 900; color: var(--team2-color);">0 pts</span>
+                    <span id="tv-summary-t2-round-pts" style="font-size: 0.85rem; color: #7dd3fc; font-weight: 800;">+0 pts (このラウンド)</span>
+                </div>
+            </div>
+
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.3rem; width: 100%; max-width: 760px; text-align: left;">
+                ⚔️ 全対戦卓のプレイヤー順位（このラウンドの獲得点 / 累計スコア）
+            </div>
+            <div id="tv-summary-pod-breakdown" style="width: 100%; max-width: 760px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem; margin-bottom: 1rem;"></div>
+
+            <div style="font-size: 0.95rem; color: var(--accent-yellow); font-weight: 800; margin-bottom: 0.5rem;">⏳ 次のラウンド開始まで少々お待ちください...</div>
+        </div>
+
+        <!-- Dedicated Matchup Reveal Overlay -->
+        <div id="matchup-overlay" class="overlay" style="display: none; padding: 1.5rem; z-index: 220; justify-content: center;">
+            <h3 id="matchup-round-badge" style="color: var(--accent-yellow); font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 0.4rem;">
+                ⚔️ ラウンド 1 対戦カード発表
+            </h3>
+            <h2 style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 1rem;">
+                BATTLE MATCHUP
+            </h2>
+            <div id="matchup-cards-container" style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 0.8rem; max-height: 380px; overflow-y: auto;">
+            </div>
+            <div id="matchup-countdown-text" style="font-size: 1rem; color: var(--accent-yellow); font-weight: 900; margin-top: 1rem;">
+                対戦開始まで... 4
+            </div>
+        </div>
+
+        <!-- Instruction Countdown Overlay -->
+        <div id="instruction-overlay" class="overlay" style="display: none;">
+            <h3 id="instr-round-title" style="color: var(--accent-yellow); font-size: 1.1rem; font-weight: 900; margin-bottom: 0.3rem;">ラウンド 1 ルール説明</h3>
+            <h2 id="instr-main-title" style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 1rem;">スロットイン・モード</h2>
+            <div id="instr-body" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 440px; margin-bottom: 1rem; font-weight: 500;"></div>
+            <div style="font-size: 0.9rem; color: #38bdf8; font-weight: 700;">対戦開始まで</div>
+            <div id="countdown-num" class="countdown-circle">10</div>
+        </div>
+
+        <!-- Final Winner Screen -->
+        <div id="end-overlay" class="overlay" style="display: none;">
+            <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--accent-yellow); margin-bottom: 0.5rem;">👑 全ラウンド制覇！</h2>
+            <p id="final-team-winner-banner" style="font-size: 1.4rem; font-weight: 900; margin-bottom: 0.5rem;"></p>
+            <p id="final-rank-msg" style="color: var(--text-main); font-size: 1.05rem; font-weight: 700; margin-bottom: 1.2rem; line-height: 1.6;"></p>
+            <div style="display: flex; gap: 0.8rem; width: 100%; justify-content: center;">
+                <button class="action-btn action-btn-green" onclick="requestPlayAgainToWaitingRoom()">🔄 もう一度遊ぶ（待機室へ）</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================
+        // 1. SUPABASE CONFIGURATION & INIT
+        // ========================================================
+        const SUPABASE_URL = 'https://wzqcqpzlvrcysgnzvgkc.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_xe4wuO43fcwdP3CzTM1qzQ_ZzKGAd2-';
+        
+        let supabaseClient = null;
+        let realtimeChannel = null;
+
+        try {
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.error("Supabase init error:", e);
+        }
+
+        // Guaranteed unique ID per tab/device session
+        let myId = sessionStorage.getItem('epi_my_id');
+        if (!myId) {
+            myId = 'user_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            sessionStorage.setItem('epi_my_id', myId);
+        }
+
+        let myName = '';
+        let myTeam = null;
+        let roomCode = 'main';
+        let allPlayers = [];
+        let syncInterval = null;
+        let gameLaunchedLocally = false;
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        let isJoinParam = urlParams.get('join') === 'true';
+
+        let roundHasAdvanced = false;
+        let completedRounds = new Set();
+        let intermissionTimeout = null;
+
+        let totalScore = 0;
+        let roundBaseScore = 0;
+        let roundBonusScore = 0;
+        let myRoundPlacement = 1;
+        let finishedPlayersThisRound = new Set();
+
+        let playerScoresAtRoundStart = {};
+        let roundStartT1Score = 0;
+        let roundStartT2Score = 0;
+
+        let graceTimerInterval = null;
+        let graceSecondsLeft = 30;
+
+        let r4GameTimerInterval = null;
+        let r4SecondsLeft = 120;
+        let matchupTimerInterval = null;
+
+        // ========================================================
+        // ADDED: QR CODE AND VIEW INITIALIZATION
+        // ========================================================
+        function initDisplayViews() {
+            const tvView = document.getElementById('tv-display-view');
+            const studentView = document.getElementById('student-input-view');
+            
+            if (isJoinParam) {
+                if (tvView) tvView.style.display = 'none';
+                if (studentView) studentView.style.display = 'flex';
+            } else {
+                if (tvView) tvView.style.display = 'flex';
+                if (studentView) studentView.style.display = 'none';
+                
+                const joinUrl = window.location.href.split('?')[0] + '?join=true';
+                const urlInput = document.getElementById('custom-join-url-input');
+                
+                if (urlInput) urlInput.value = joinUrl;
+                updateQrCodeFromInput(joinUrl);
+            }
+        }
+
+        function updateQrCodeFromInput(url) {
+            const container = document.getElementById('tv-qrcode-container');
+            const joinUrlText = document.getElementById('tv-join-url-text');
+            
+            if (!container) return;
+            
+            if (joinUrlText) joinUrlText.textContent = url;
+            container.innerHTML = ''; 
+            
+            if (url) {
+                new QRCode(container, {
+                    text: url,
+                    width: 220,
+                    height: 220,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        // ========================================================
+        // 2. KAHOOT-STYLE BATTLE AUDIO SYNTHESIZER
+        // ========================================================
+        let audioCtx = null;
+        let isAudioMuted = false;
+        let bgmInterval = null;
+        let bgmStep = 0;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        window.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+
+        function toggleAudio() {
+            initAudioContext();
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-toggle-btn');
+            if (btn) {
+                const audioLabel = isJoinParam ? 'SFX' : 'BGM/SFX';
+                if (isAudioMuted) {
+                    btn.textContent = `🔇 ${audioLabel} OFF`;
+                    btn.classList.add('muted');
+                    stopBGM();
+                } else {
+                    btn.textContent = `🔊 ${audioLabel} ON`;
+                    btn.classList.remove('muted');
+                    if (!isJoinParam) {
+                        startBGM();
+                    }
+                }
+            }
+        }
+
+        function sfxClick() {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                const now = audioCtx.currentTime;
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } catch (e) {}
+        }
+
+        function sfxCorrect() {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                [523.25, 783.99].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.2);
+                });
+            } catch (e) {}
+        }
+
+        function sfxError() {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                const now = audioCtx.currentTime;
+                osc.frequency.setValueAtTime(240, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.18);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                osc.start(now);
+                osc.stop(now + 0.18);
+            } catch (e) {}
+        }
+
+        function sfxOverflow() {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                [200, 150, 90].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                    gain.gain.setValueAtTime(0.22, now + idx * 0.09);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.16);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                    osc.start(now + idx * 0.09);
+                    osc.stop(now + idx * 0.09 + 0.16);
+                });
+            } catch (e) {}
+        }
+
+        function sfxTick(isFinal) {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = isFinal ? 'triangle' : 'sine';
+                const now = audioCtx.currentTime;
+                const freq = isFinal ? 1046.50 : 587.33;
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (isFinal ? 0.35 : 0.06));
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                osc.start(now);
+                osc.stop(now + (isFinal ? 0.35 : 0.06));
+            } catch (e) {}
+        }
+
+        function sfxVictory() {
+            if (isAudioMuted) return;
+            initAudioContext();
+            if (!audioCtx) return;
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                const now = audioCtx.currentTime;
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (e) {} };
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.4);
+                });
+            } catch (e) {}
+        }
+
+        const KAHOOT_BASS = [
+            73.42, 146.83, 0, 146.83, 0, 73.42, 146.83, 0,
+            87.31, 174.61, 0, 174.61, 98.00, 196.00, 110.00, 130.81,
+            73.42, 146.83, 0, 146.83, 0, 73.42, 146.83, 0,
+            130.81, 261.63, 0, 261.63, 110.00, 220.00, 123.47, 130.81
+        ];
+
+        const KAHOOT_LEAD = [
+            587.33, 0, 587.33, 0, 698.46, 0, 587.33, 0,
+            523.25, 0, 440.00, 0, 523.25, 587.33, 0, 0,
+            587.33, 0, 587.33, 0, 698.46, 783.99, 698.46, 0,
+            587.33, 0, 523.25, 0, 440.00, 523.25, 587.33, 0
+        ];
+
+        const KAHOOT_DRUMS = [
+            1, 2, 0, 2, 3, 2, 0, 2,
+            1, 2, 0, 2, 3, 2, 1, 2,
+            1, 2, 0, 2, 3, 2, 0, 2,
+            1, 2, 0, 2, 3, 2, 3, 2
+        ];
+
+        function startBGM() {
+            if (isJoinParam) return;
+            if (bgmInterval || isAudioMuted) return;
+            initAudioContext();
+            bgmStep = 0;
+            bgmInterval = setInterval(() => {
+                if (isAudioMuted || !audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const bFreq = KAHOOT_BASS[bgmStep];
+                const lFreq = KAHOOT_LEAD[bgmStep];
+                const drumType = KAHOOT_DRUMS[bgmStep];
+
+                if (bFreq > 0) {
+                    const oscB = audioCtx.createOscillator();
+                    const filterB = audioCtx.createBiquadFilter();
+                    const gainB = audioCtx.createGain();
+                    oscB.type = 'sawtooth';
+                    oscB.frequency.setValueAtTime(bFreq, now);
+
+                    filterB.type = 'lowpass';
+                    filterB.frequency.setValueAtTime(500, now);
+                    filterB.frequency.exponentialRampToValueAtTime(160, now + 0.08);
+
+                    gainB.gain.setValueAtTime(0.12, now);
+                    gainB.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+                    oscB.connect(filterB);
+                    filterB.connect(gainB);
+                    gainB.connect(audioCtx.destination);
+
+                    oscB.onended = () => {
+                        try { oscB.disconnect(); filterB.disconnect(); gainB.disconnect(); } catch (e) {}
+                    };
+                    oscB.start(now);
+                    oscB.stop(now + 0.09);
+                }
+
+                if (lFreq > 0) {
+                    const oscL = audioCtx.createOscillator();
+                    const gainL = audioCtx.createGain();
+                    oscL.type = 'square';
+                    oscL.frequency.setValueAtTime(lFreq, now);
+
+                    gainL.gain.setValueAtTime(0.065, now);
+                    gainL.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+                    oscL.connect(gainL);
+                    gainL.connect(audioCtx.destination);
+
+                    oscL.onended = () => {
+                        try { oscL.disconnect(); gainL.disconnect(); } catch (e) {}
+                    };
+                    oscL.start(now);
+                    oscL.stop(now + 0.07);
+                }
+
+                if (drumType === 1) {
+                    const kickOsc = audioCtx.createOscillator();
+                    const kickGain = audioCtx.createGain();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(140, now);
+                    kickOsc.frequency.exponentialRampToValueAtTime(40, now + 0.07);
+                    kickGain.gain.setValueAtTime(0.16, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(audioCtx.destination);
+                    kickOsc.onended = () => {
+                        try { kickOsc.disconnect(); kickGain.disconnect(); } catch(e) {}
+                    };
+                    kickOsc.start(now);
+                    kickOsc.stop(now + 0.07);
+                } else if (drumType === 2) {
+                    const hatOsc = audioCtx.createOscillator();
+                    const hatGain = audioCtx.createGain();
+                    hatOsc.type = 'triangle';
+                    hatOsc.frequency.setValueAtTime(6000, now);
+                    hatGain.gain.setValueAtTime(0.035, now);
+                    hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+                    hatOsc.connect(hatGain);
+                    hatGain.connect(audioCtx.destination);
+                    hatOsc.onended = () => {
+                        try { hatOsc.disconnect(); hatGain.disconnect(); } catch(e) {}
+                    };
+                    hatOsc.start(now);
+                    hatOsc.stop(now + 0.025);
+                } else if (drumType === 3) {
+                    const snareOsc = audioCtx.createOscillator();
+                    const snareGain = audioCtx.createGain();
+                    snareOsc.type = 'triangle';
+                    snareOsc.frequency.setValueAtTime(240, now);
+                    snareOsc.frequency.exponentialRampToValueAtTime(80, now + 0.06);
+                    snareGain.gain.setValueAtTime(0.09, now);
+                    snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    snareOsc.connect(snareGain);
+                    snareGain.connect(audioCtx.destination);
+                    snareOsc.onended = () => {
+                        try { snareOsc.disconnect(); snareGain.disconnect(); } catch(e) {}
+                    };
+                    snareOsc.start(now);
+                    snareOsc.stop(now + 0.06);
+                }
+
+                bgmStep = (bgmStep + 1) % KAHOOT_BASS.length;
+            }, 117);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        // ========================================================
+        // 3. SENTENCES, CHUNKS & CLOZE QUESTIONS (Winnie-the-Pooh Section 2)
+        // ========================================================
+        const SOURCE_SENTENCES = [
+            {
+                id: 1,
+                chunks: [
+                    'The book was written by A. A. Milne,',
+                    'a British author,',
+                    'in 1926.'
+                ],
+                jpChunks: [
+                    'その本はA. A. ミルンによって書かれました，',
+                    'イギリス人作家である，',
+                    '1926年に。'
+                ]
+            },
+            {
+                id: 2,
+                chunks: [
+                    'It is about Winnie-the-Pooh and his friends.'
+                ],
+                jpChunks: [
+                    'それはクマのプーさんとその仲間たちについてのお話です。'
+                ]
+            },
+            {
+                id: 3,
+                chunks: [
+                    'Pooh spends his days in a forest',
+                    'with Christopher Robin, Piglet, Eeyore, and some other animals.'
+                ],
+                jpChunks: [
+                    'プーは森の中で日々を過ごします',
+                    'クリストファー・ロビン、ピグレット、イーヨー、そして他の何匹かの動物たちと一緒に。'
+                ]
+            },
+            {
+                id: 4,
+                chunks: [
+                    'Every character is unique.'
+                ],
+                jpChunks: [
+                    'どのキャラクターも個性的（ユニーク）です。'
+                ]
+            }
+        ];
+
+        const ROUND3_QUESTIONS = [
+            {
+                fullText: "The book was [BLANK] by A. A. Milne, a British author, in 1926.",
+                targetWord: "written",
+                jp: "書かれた",
+                options: [
+                    { en: "written", jp: "書かれた" },
+                    { en: "read", jp: "読まれた" },
+                    { en: "found", jp: "見つけられた" },
+                    { en: "bought", jp: "買われた" },
+                    { en: "sold", jp: "売られた" }
+                ]
+            },
+            {
+                fullText: "The book was written by A. A. Milne, a British [BLANK], in 1926.",
+                targetWord: "author",
+                jp: "作家・著者",
+                options: [
+                    { en: "author", jp: "作家・著者" },
+                    { en: "actor", jp: "俳優" },
+                    { en: "doctor", jp: "医者" },
+                    { en: "singer", jp: "歌手" },
+                    { en: "painter", jp: "画家" }
+                ]
+            },
+            {
+                fullText: "Pooh [BLANK] his days in a forest with Christopher Robin, Piglet, Eeyore, and some other animals.",
+                targetWord: "spends",
+                jp: "過ごす",
+                options: [
+                    { en: "spends", jp: "過ごす" },
+                    { en: "starts", jp: "始める" },
+                    { en: "finishes", jp: "終える" },
+                    { en: "forgets", jp: "忘れる" },
+                    { en: "hopes", jp: "願う" }
+                ]
+            },
+            {
+                fullText: "Every character is [BLANK].",
+                targetWord: "unique",
+                jp: "個性的（ユニーク）",
+                options: [
+                    { en: "unique", jp: "個性的（ユニーク）" },
+                    { en: "popular", jp: "人気のある" },
+                    { en: "common", jp: "ありふれた" },
+                    { en: "strange", jp: "奇妙な" },
+                    { en: "simple", jp: "単純な" }
+                ]
+            }
+        ];
+
+        const R4_ALL_CHUNKS = [
+            'The book was written by A. A. Milne,',
+            'a British author,',
+            'in 1926.',
+            'It is about Winnie-the-Pooh and his friends.',
+            'Pooh spends his days in a forest',
+            'with Christopher Robin, Piglet, Eeyore, and some other animals.',
+            'Every character is unique.'
+        ];
+
+        let currentRound = 1;
+        let sentenceQueue = [];
+        let currentSentence = null;
+        let currentRound3Q = null;
+        let gridData = [];
+        let activeChain = [];
+        let progress = 0;
+        let isInputLocked = true;
+        let activeCountdownTimer = null;
+        let playerStatus = 'waiting';
+
+        // 3 WIDE COLUMNS (4 Rows x 3 Cols)
+        const R4_COLS = 3;
+        const R4_ROWS = 4;
+        let r4ActiveBlocks = [];
+        let r4ShelfTiles = [];
+        let r4DropInterval = null;
+
+        function showFloatingScore(targetEl, text, isPositive) {
+            if (!targetEl) return;
+            const rect = targetEl.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.className = `floating-score ${isPositive ? 'floating-plus' : 'floating-minus'}`;
+            popup.textContent = text;
+            popup.style.left = `${rect.left + rect.width / 2}px`;
+            popup.style.top = `${rect.top}px`;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 850);
+        }
+
+        function animateCountUp(elementId, start, end, duration, prefix = "", suffix = " pts") {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            if (end === 0) {
+                el.textContent = `${prefix}0${suffix}`;
+                return;
+            }
+            let startTime = null;
+            let lastSoundTime = 0;
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const p = Math.min((timestamp - startTime) / duration, 1);
+                const current = Math.floor(p * (end - start) + start);
+                el.textContent = `${prefix}${current}${suffix}`;
+                if (p < 1) {
+                    if (timestamp - lastSoundTime > 80) {
+                        sfxClick();
+                        lastSoundTime = timestamp;
+                    }
+                    requestAnimationFrame(step);
+                } else {
+                    el.textContent = `${prefix}${end}${suffix}`;
+                    sfxCorrect();
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        // ========================================================
+        // 4. PARALLEL 2v2 POD LOGIC & MULTI-PLAYER FIX
+        // ========================================================
+        function parsePlayerTeam(player) {
+            if (!player || !player.status) return null;
+            if (player.status.startsWith('T1_')) return 'team-1';
+            if (player.status.startsWith('T2_')) return 'team-2';
+            return null;
+        }
+
+        function parsePlayerState(player) {
+            if (!player || !player.status) return 'waiting';
+            const s = player.status;
+            if (/^T[0-2]_/.test(s)) {
+                return s.substring(3);
+            }
+            return s;
+        }
+
+        function formatStatusForDB(team, state) {
+            const tPrefix = team === 'team-1' ? 'T1' : (team === 'team-2' ? 'T2' : 'T0');
+            return `${tPrefix}_${state}`;
+        }
+
+        function calculateCurrentTeamScores() {
+            const valid = allPlayers.filter(p => !p.id.startsWith('signal_'));
+            let t1 = 0, t2 = 0;
+            valid.forEach(p => {
+                const team = parsePlayerTeam(p);
+                if (team === 'team-1') t1 += (p.score || 0);
+                if (team === 'team-2') t2 += (p.score || 0);
+            });
+            return { t1, t2 };
+        }
+
+        function getPlayerRoundScore(p) {
+            const startScore = playerScoresAtRoundStart[p.id] !== undefined ? playerScoresAtRoundStart[p.id] : 0;
+            return Math.max(0, (p.score || 0) - startScore);
+        }
+
+        async function adminShuffleAndPairPods() {
+            initAudioContext();
+            const realPlayers = allPlayers.filter(p => !p.id.startsWith('signal_'));
+            if (realPlayers.length < 1) {
+                alert("参加者がまだいません。生徒が参加してから編成してください。");
+                return;
+            }
+
+            const shuffled = shuffle([...realPlayers]);
+            const team1 = [];
+            const team2 = [];
+            shuffled.forEach((p, idx) => {
+                if (idx % 2 === 0) team1.push(p);
+                else team2.push(p);
+            });
+
+            const podCount = Math.max(1, Math.floor(shuffled.length / 4));
+            const updates = [];
+
+            team1.forEach((p, idx) => {
+                const podIndex = (idx % podCount) + 1;
+                updates.push({
+                    id: p.id,
+                    name: p.name,
+                    room: `pod-${podIndex}`,
+                    status: formatStatusForDB('team-1', 'assigned'),
+                    progress: 0,
+                    score: 0,
+                    round: 1,
+                    updated_at: new Date()
+                });
+            });
+
+            team2.forEach((p, idx) => {
+                const podIndex = (idx % podCount) + 1;
+                updates.push({
+                    id: p.id,
+                    name: p.name,
+                    room: `pod-${podIndex}`,
+                    status: formatStatusForDB('team-2', 'assigned'),
+                    progress: 0,
+                    score: 0,
+                    round: 1,
+                    updated_at: new Date()
+                });
+            });
+
+            if (supabaseClient) {
+                await supabaseClient.from('classroom_players').upsert(updates, { onConflict: 'id' });
+                await realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'teams-pods-assigned',
+                    payload: { timestamp: Date.now() }
+                });
+            }
+
+            await fetchPlayers();
+        }
+
+        async function startGameForMyPod() {
+            initAudioContext();
+            const btn = document.getElementById('group-start-btn');
+            if (btn) btn.textContent = '⏳ スタート送信中...';
+
+            if (realtimeChannel) {
+                try {
+                    await realtimeChannel.send({
+                        type: 'broadcast',
+                        event: 'start-round-1',
+                        payload: { room: 'all', all: true }
+                    });
+                } catch (e) {
+                    console.error("Pod start broadcast error:", e);
+                }
+            }
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('classroom_players').upsert({
+                        id: 'signal_start_all',
+                        name: 'GLOBAL_START',
+                        room: 'all',
+                        status: 'T0_start_signal',
+                        score: Date.now(),
+                        round: 1,
+                        updated_at: new Date()
+                    }, { onConflict: 'id' });
+                } catch (e) {}
+            }
+
+            triggerSimultaneousStart();
+        }
+
+        async function adminStartAllGroups() {
+            initAudioContext();
+            const btn = document.getElementById('tv-start-all-btn');
+            if (btn) btn.textContent = '⏳ 全卓スタート送信中...';
+
+            const unassigned = allPlayers.filter(p => !p.id.startsWith('signal_') && !p.room.startsWith('pod-'));
+            if (unassigned.length > 0) {
+                await adminShuffleAndPairPods();
+            }
+
+            if (realtimeChannel) {
+                try {
+                    await realtimeChannel.send({
+                        type: 'broadcast',
+                        event: 'start-round-1',
+                        payload: { room: 'all', all: true }
+                    });
+                } catch (e) {}
+            }
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('classroom_players').upsert({
+                        id: 'signal_start_all',
+                        name: 'GLOBAL_START',
+                        room: 'all',
+                        status: 'T0_start_signal',
+                        score: Date.now(),
+                        round: 1,
+                        updated_at: new Date()
+                    }, { onConflict: 'id' });
+                } catch (e) {}
+            }
+
+            if (btn) btn.textContent = '🚀 全卓一斉スタート';
+
+            triggerSimultaneousStart();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                initDisplayViews();
+
+                if (supabaseClient) {
+                    realtimeChannel = supabaseClient.channel('classroom-2v2-room', {
+                        config: { broadcast: { self: true } }
+                    });
+
+                    realtimeChannel
+                        .on('broadcast', { event: 'teams-pods-assigned' }, () => {
+                            fetchPlayers();
+                        })
+                        .on('broadcast', { event: 'start-round-1' }, payload => {
+                            const p = payload.payload;
+                            if (p && (p.all === true || p.room === 'all' || p.room === roomCode)) {
+                                if (!gameLaunchedLocally) {
+                                    triggerSimultaneousStart();
+                                }
+                            }
+                        })
+                        .on('broadcast', { event: 'player-finished-task' }, payload => {
+                            const p = payload.payload;
+                            if (p && p.round === currentRound && (p.room === roomCode || p.room === 'all')) {
+                                finishedPlayersThisRound.add(p.playerId);
+                            }
+                            fetchPlayers();
+                        })
+                        .on('broadcast', { event: 'start-grace-period' }, payload => {
+                            const p = payload.payload;
+                            if (p && (p.all === true || p.room === roomCode || p.room === 'all')) {
+                                startGracePeriodUI();
+                            }
+                        })
+                        .on('broadcast', { event: 'all-players-completed-round' }, payload => {
+                            const p = payload.payload;
+                            if (!p) return;
+                            if (p.all === true || p.room === roomCode || p.room === 'all') {
+                                if (p.round !== currentRound) return;
+                                if (completedRounds.has(p.round)) return;
+                                if (typeof p.nextRound === 'number' && currentRound >= p.nextRound) return;
+
+                                completedRounds.add(p.round);
+                                roundHasAdvanced = true;
+                                showSynchronizedRoundSummary(p.nextRound);
+                            }
+                        })
+                        .on('broadcast', { event: 'reset-to-waiting' }, payload => {
+                            const p = payload.payload;
+                            if (p && (p.all === true || p.room === roomCode || p.room === 'all')) {
+                                returnToWaitingRoom();
+                            }
+                        })
+                        .subscribe();
+                }
+
+                startSyncLoop();
+            } catch (err) {
+                console.error("DOM load initialization error:", err);
+            }
+        });
+
+        // FIXED: Allows multiple players without filtering them out by name or duplicate session key
+        async function fetchPlayers() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient.from('classroom_players').select('*');
+                if (!error && data) {
+                    const playerMap = new Map();
+                    (data || []).forEach(p => {
+                        if (!p || !p.id || p.id.startsWith('signal_')) return;
+                        playerMap.set(p.id, p);
+                    });
+
+                    allPlayers = Array.from(playerMap.values());
+
+                    updateGrandScoreboard();
+                    renderTvPodsGrid();
+                    renderWaitingRoomMembers();
+                    renderLeaderboard();
+                    checkRoomProgress();
+
+                    const me = allPlayers.find(p => p.id === myId);
+                    if (me && isJoinParam) {
+                        const team = parsePlayerTeam(me);
+                        if (team) myTeam = team;
+                        if (me.room && me.room.startsWith('pod-')) {
+                            roomCode = me.room;
+                            updateStudentAssignmentUI();
+                        }
+                    }
+
+                    if (parsePlayerState({ status: playerStatus }) === 'waiting' && !gameLaunchedLocally) {
+                        const now = Date.now();
+                        const activeStartSignal = data.find(p => 
+                            (p.id === 'signal_start_all' || p.id === `signal_start_${roomCode}`) &&
+                            p.status && p.status.includes('start_signal') &&
+                            (now - (p.score || 0) < 15000)
+                        );
+                        if (activeStartSignal) {
+                            triggerSimultaneousStart();
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Fetch players error:", e);
+            }
+        }
+
+        async function savePlayers() {
+            if (!supabaseClient || !isJoinParam || !myName) return;
+
+            if (!myTeam) {
+                const me = allPlayers.find(p => p.id === myId);
+                if (me) {
+                    const t = parsePlayerTeam(me);
+                    if (t) myTeam = t;
+                }
+            }
+            if (!roomCode || !roomCode.startsWith('pod-')) {
+                const me = allPlayers.find(p => p.id === myId);
+                if (me && me.room && me.room.startsWith('pod-')) {
+                    roomCode = me.room;
+                }
+            }
+
+            try {
+                await supabaseClient.from('classroom_players').upsert({
+                    id: myId,
+                    name: myName,
+                    room: roomCode || 'main',
+                    status: formatStatusForDB(myTeam, playerStatus),
+                    progress: progress,
+                    score: totalScore,
+                    round: currentRound,
+                    updated_at: new Date()
+                }, { onConflict: 'id' });
+                fetchPlayers();
+            } catch (e) {
+                console.error("Save players error:", e);
+            }
+        }
+
+        function startSyncLoop() {
+            fetchPlayers();
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(fetchPlayers, 1500);
+        }
+
+        function updateGrandScoreboard() {
+            const team1ScoreEl = document.getElementById('hud-team1-score');
+            const team2ScoreEl = document.getElementById('hud-team2-score');
+            const scoreboardHud = document.getElementById('team-scoreboard-hud');
+
+            const { t1, t2 } = calculateCurrentTeamScores();
+
+            if (team1ScoreEl) team1ScoreEl.textContent = `${t1} pts`;
+            if (team2ScoreEl) team2ScoreEl.textContent = `${t2} pts`;
+
+            if (scoreboardHud) {
+                if (!isJoinParam || gameLaunchedLocally) {
+                    scoreboardHud.style.display = 'grid';
+                }
+            }
+        }
+
+        function renderTvPodsGrid() {
+            const gridEl = document.getElementById('tv-pods-grid');
+            const countLabel = document.getElementById('tv-player-count-label');
+            if (!gridEl) return;
+
+            const realPlayers = allPlayers.filter(p => !p.id.startsWith('signal_'));
+            if (countLabel) countLabel.textContent = `参加者: ${realPlayers.length}人`;
+
+            const pods = {};
+            realPlayers.forEach(p => {
+                const r = p.room && p.room.startsWith('pod-') ? p.room : '未編成';
+                if (!pods[r]) pods[r] = [];
+                pods[r].push(p);
+            });
+
+            if (Object.keys(pods).length === 0 || (Object.keys(pods).length === 1 && pods['未編成'])) {
+                gridEl.innerHTML = `
+                    <div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem; text-align: center;">
+                        現在 <strong>${realPlayers.length}人</strong> が接続中。<br>「🎲 チーム＆対戦卓 編成」を押して 2v2 卓を自動生成してください。
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            Object.keys(pods).sort().forEach(podName => {
+                if (podName === '未編成') return;
+                const members = pods[podName];
+                const t1Members = members.filter(m => parsePlayerTeam(m) === 'team-1');
+                const t2Members = members.filter(m => parsePlayerTeam(m) === 'team-2');
+
+                const podNum = podName.replace('pod-', '');
+                html += `
+                    <div class="pod-card">
+                        <div class="pod-card-header">
+                            <span>第 ${podNum} 卓 (Table ${podNum})</span>
+                            <span style="color: var(--accent-yellow); font-size: 0.75rem;">${members.length}人</span>
+                        </div>
+                        <div class="pod-teams-row">
+                            <div class="pod-team-col">
+                                <span style="color: var(--team1-color); font-weight: 800;">🔴 チーム1</span>
+                                ${t1Members.map(m => `<span class="pod-member-tag">👤 ${m.name} (${m.score || 0}p)</span>`).join('') || '<span style="color:var(--text-muted);">-</span>'}
+                            </div>
+                            <div class="pod-team-col">
+                                <span style="color: var(--team2-color); font-weight: 800;">🔵 チーム2</span>
+                                ${t2Members.map(m => `<span class="pod-member-tag">👤 ${m.name} (${m.score || 0}p)</span>`).join('') || '<span style="color:var(--text-muted);">-</span>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            gridEl.innerHTML = html;
+        }
+
+        async function clearAllDatabasePlayers() {
+            if (!supabaseClient) return;
+            if (!confirm('データベース上のすべての参加者履歴をクリアしますか？')) return;
+            try {
+                await supabaseClient.from('classroom_players').delete().neq('id', 'non_existent_placeholder');
+                allPlayers = [];
+                fetchPlayers();
+            } catch (e) {
+                console.error("Clear players error:", e);
+            }
+        }
+
+        async function enterWaitingRoom() {
+            try {
+                initAudioContext();
+                const nameInput = document.getElementById('player-name-input');
+                const typed = nameInput ? nameInput.value.trim() : '';
+                if (!typed) {
+                    alert('ニックネームを入力してください。');
+                    return;
+                }
+                myName = typed;
+
+                playerStatus = 'waiting';
+                totalScore = 0;
+                roundBaseScore = 0;
+                roundBonusScore = 0;
+                roomCode = 'main';
+                await savePlayers();
+
+                const lobbyScreen = document.getElementById('lobby-screen');
+                const waitingView = document.getElementById('waiting-room-view');
+
+                if (lobbyScreen) lobbyScreen.style.display = 'none';
+                if (waitingView) waitingView.style.display = 'flex';
+
+                startSyncLoop();
+            } catch (e) {
+                console.error("Enter waiting room error:", e);
+            }
+        }
+
+        function updateStudentAssignmentUI() {
+            const banner = document.getElementById('student-assignment-banner');
+            const teamText = document.getElementById('assignment-team-text');
+            const podText = document.getElementById('assignment-pod-text');
+            const oppText = document.getElementById('assignment-opponents-text');
+            const waitingStatus = document.getElementById('student-waiting-status');
+            const startBtn = document.getElementById('group-start-btn');
+
+            if (!banner || !myTeam || !roomCode.startsWith('pod-')) return;
+
+            banner.style.display = 'flex';
+            if (myTeam === 'team-1') {
+                teamText.className = 'team1-text';
+                teamText.textContent = 'あなたは【🔴 チーム1 (Red)】です！';
+            } else {
+                teamText.className = 'team2-text';
+                teamText.textContent = 'あなたは【🔵 チーム2 (Blue)】です！';
+            }
+
+            const podNum = roomCode.replace('pod-', '');
+            podText.textContent = `対戦卓: 第 ${podNum} 卓 (Table ${podNum})`;
+
+            const podPlayers = allPlayers.filter(p => p.room === roomCode && !p.id.startsWith('signal_'));
+            const opponents = podPlayers.filter(p => parsePlayerTeam(p) !== myTeam);
+            const teammates = podPlayers.filter(p => parsePlayerTeam(p) === myTeam && p.id !== myId);
+
+            oppText.innerHTML = `
+                味方: <strong>${teammates.map(t => t.name).join(', ') || 'なし'}</strong> | 
+                対戦相手: <strong>${opponents.map(o => o.name).join(', ') || '待機中'}</strong>
+            `;
+
+            if (waitingStatus) {
+                waitingStatus.textContent = '✅ 対戦卓が確定しました！先生または卓メンバーのスタートを待っています...';
+            }
+            if (startBtn) {
+                startBtn.style.display = 'block';
+            }
+        }
+
+        function renderWaitingRoomMembers() {
+            const listEl = document.getElementById('waiting-members-list');
+            if (!listEl) return;
+
+            const realPlayers = allPlayers.filter(p => !p.id.startsWith('signal_'));
+            let html = '';
+            realPlayers.forEach(m => {
+                const team = parsePlayerTeam(m);
+                const pill = team === 'team-1' 
+                    ? '<span class="team-tag-pill pill-team1">🔴 T1</span>' 
+                    : (team === 'team-2' ? '<span class="team-tag-pill pill-team2">🔵 T2</span>' : '');
+
+                html += `<div class="waiting-tag">${pill}👤 ${m.name} ${m.id === myId ? '(あなた)' : ''}</div>`;
+            });
+            listEl.innerHTML = html || (isJoinParam && myName ? `<div class="waiting-tag">👤 ${myName} (あなた)</div>` : `<div style="color:var(--text-muted);font-size:0.8rem;">待機中の生徒はいません</div>`);
+        }
+
+        async function requestPlayAgainToWaitingRoom() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+            if (intermissionTimeout) clearTimeout(intermissionTimeout);
+            playerStatus = 'waiting';
+            currentRound = 1;
+            progress = 0;
+            totalScore = 0;
+            roundBaseScore = 0;
+            roundBonusScore = 0;
+            finishedPlayersThisRound.clear();
+            completedRounds.clear();
+            await savePlayers();
+
+            if (realtimeChannel) {
+                await realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'reset-to-waiting',
+                    payload: { room: 'all', all: true }
+                });
+            }
+            returnToWaitingRoom();
+        }
+
+        function returnToWaitingRoom() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+            if (intermissionTimeout) clearTimeout(intermissionTimeout);
+            stopBGM();
+            gameLaunchedLocally = false;
+            playerStatus = 'waiting';
+            currentRound = 1;
+            progress = 0;
+            totalScore = 0;
+            roundBaseScore = 0;
+            roundBonusScore = 0;
+            finishedPlayersThisRound.clear();
+            completedRounds.clear();
+            savePlayers();
+
+            const endOverlay = document.getElementById('end-overlay');
+            const gameContent = document.getElementById('game-content');
+            const waitingView = document.getElementById('waiting-room-view');
+            const roundIndicator = document.getElementById('round-indicator');
+            const playerWaitingOverlay = document.getElementById('player-waiting-overlay');
+            const graceBanner = document.getElementById('grace-banner');
+            const r4TimerEl = document.getElementById('r4-timer-display');
+            const tvIntermission = document.getElementById('tv-round-summary-overlay');
+            const matchupOverlay = document.getElementById('matchup-overlay');
+
+            if (endOverlay) endOverlay.style.display = 'none';
+            if (gameContent) gameContent.style.display = 'none';
+            if (roundIndicator) roundIndicator.style.display = 'none';
+            if (playerWaitingOverlay) playerWaitingOverlay.style.display = 'none';
+            if (graceBanner) graceBanner.style.display = 'none';
+            if (r4TimerEl) r4TimerEl.style.display = 'none';
+            if (tvIntermission) tvIntermission.style.display = 'none';
+            if (matchupOverlay) matchupOverlay.style.display = 'none';
+
+            if (isJoinParam) {
+                if (waitingView) waitingView.style.display = 'flex';
+                renderWaitingRoomMembers();
+            } else {
+                const lobbyScreen = document.getElementById('lobby-screen');
+                const tvView = document.getElementById('tv-display-view');
+                if (lobbyScreen) lobbyScreen.style.display = 'flex';
+                if (tvView) tvView.style.display = 'flex';
+            }
+        }
+
+        async function triggerSimultaneousStart() {
+            try {
+                initAudioContext();
+                if (r4DropInterval) clearInterval(r4DropInterval);
+                if (graceTimerInterval) clearInterval(graceTimerInterval);
+                if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+                if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+                if (intermissionTimeout) clearTimeout(intermissionTimeout);
+                gameLaunchedLocally = true;
+
+                await fetchPlayers();
+
+                const me = allPlayers.find(p => p.id === myId);
+                if (me) {
+                    const t = parsePlayerTeam(me);
+                    if (t) myTeam = t;
+                    if (me.room && me.room.startsWith('pod-')) {
+                        roomCode = me.room;
+                    }
+                }
+
+                const lobbyScreen = document.getElementById('lobby-screen');
+                const waitingView = document.getElementById('waiting-room-view');
+                const endOverlay = document.getElementById('end-overlay');
+                const gameContent = document.getElementById('game-content');
+                const roundIndicator = document.getElementById('round-indicator');
+                const groupLabel = document.getElementById('current-group-label');
+                const playerWaitingOverlay = document.getElementById('player-waiting-overlay');
+                const graceBanner = document.getElementById('grace-banner');
+                const r4TimerEl = document.getElementById('r4-timer-display');
+                const teamScoreboardHud = document.getElementById('team-scoreboard-hud');
+                const tvIntermission = document.getElementById('tv-round-summary-overlay');
+
+                if (waitingView) waitingView.style.display = 'none';
+                if (endOverlay) endOverlay.style.display = 'none';
+                if (playerWaitingOverlay) playerWaitingOverlay.style.display = 'none';
+                if (graceBanner) graceBanner.style.display = 'none';
+                if (r4TimerEl) r4TimerEl.style.display = 'none';
+                if (tvIntermission) tvIntermission.style.display = 'none';
+
+                if (roundIndicator) roundIndicator.style.display = 'block';
+                if (teamScoreboardHud) teamScoreboardHud.style.display = 'grid';
+
+                if (isJoinParam) {
+                    if (lobbyScreen) lobbyScreen.style.display = 'none';
+                    if (gameContent) gameContent.style.display = 'flex';
+                    const podNum = roomCode.startsWith('pod-') ? roomCode.replace('pod-', '') : '1';
+                    if (groupLabel) groupLabel.textContent = `🏆 [第 ${podNum} 卓] 2v2 スピード対戦`;
+                } else {
+                    if (lobbyScreen) lobbyScreen.style.display = 'flex';
+                    if (gameContent) gameContent.style.display = 'none';
+                    const tvHeader = document.getElementById('tv-status-header');
+                    if (tvHeader) tvHeader.textContent = '⚔️ リアルタイム卓別対戦モニター (LIVE)';
+                }
+
+                currentRound = 1;
+                progress = 0;
+                totalScore = 0;
+                roundBaseScore = 0;
+                roundBonusScore = 0;
+                myRoundPlacement = 1;
+                finishedPlayersThisRound.clear();
+                completedRounds.clear();
+                playerStatus = 'playing';
+                roundHasAdvanced = false;
+
+                const { t1, t2 } = calculateCurrentTeamScores();
+                roundStartT1Score = t1;
+                roundStartT2Score = t2;
+                playerScoresAtRoundStart = {};
+                allPlayers.forEach(p => {
+                    playerScoresAtRoundStart[p.id] = (p.score || 0);
+                });
+
+                await savePlayers();
+
+                if (!isJoinParam) {
+                    startBGM();
+                }
+
+                sentenceQueue = JSON.parse(JSON.stringify(SOURCE_SENTENCES));
+                currentSentence = sentenceQueue[0];
+                loadRound1Stage();
+
+                await showMatchupOverlay(1, () => startRoundWithCountdown(1));
+            } catch (e) {
+                console.error("Trigger simultaneous start error:", e);
+            }
+        }
+
+        // ========================================================
+        // 5. PRE-ROUND MATCHUP OVERLAY REVEAL
+        // ========================================================
+        async function showMatchupOverlay(roundNum, onComplete) {
+            const overlay = document.getElementById('matchup-overlay');
+            const roundBadge = document.getElementById('matchup-round-badge');
+            const container = document.getElementById('matchup-cards-container');
+            const countdownText = document.getElementById('matchup-countdown-text');
+            if (!overlay || !container) {
+                if (onComplete) onComplete();
+                return;
+            }
+
+            if (roundBadge) roundBadge.textContent = `⚔️ ラウンド ${roundNum} 対戦カード発表`;
+            sfxTick(true);
+
+            await fetchPlayers();
+
+            if (!isJoinParam) {
+                const pods = {};
+                allPlayers.filter(p => !p.id.startsWith('signal_')).forEach(p => {
+                    const r = (p.room && p.room.startsWith('pod-')) ? p.room : 'pod-1';
+                    if (!pods[r]) pods[r] = [];
+                    pods[r].push(p);
+                });
+
+                let html = '';
+                const sortedKeys = Object.keys(pods).sort();
+                if (sortedKeys.length === 0) {
+                    html = `<div style="color:var(--text-muted); font-size:1rem; padding:1rem;">対戦卓のプレイヤーを準備中...</div>`;
+                } else {
+                    sortedKeys.forEach(podKey => {
+                        const podNum = podKey.replace('pod-', '');
+                        const members = pods[podKey];
+                        let t1 = members.filter(m => parsePlayerTeam(m) === 'team-1').map(m => m.name);
+                        let t2 = members.filter(m => parsePlayerTeam(m) === 'team-2').map(m => m.name);
+
+                        if (t1.length === 0 && t2.length === 0) {
+                            t1 = members.filter((_, i) => i % 2 === 0).map(m => m.name);
+                            t2 = members.filter((_, i) => i % 2 !== 0).map(m => m.name);
+                        }
+
+                        html += `
+                            <div style="background: rgba(30,41,59,0.9); border: 2px solid var(--border-color); border-radius: 12px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;">
+                                <div style="font-size: 0.95rem; font-weight: 800; color: #38bdf8; min-width: 80px; text-align: left;">第 ${podNum} 卓</div>
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex: 1;">
+                                    <span style="font-size: 1.05rem; font-weight: 800; color: var(--team1-color); text-align: right; flex: 1;">🔴 ${t1.join(' & ') || '未定'}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 900; background: #334155; color: var(--accent-yellow); padding: 0.2rem 0.5rem; border-radius: 6px;">VS</span>
+                                    <span style="font-size: 1.05rem; font-weight: 800; color: var(--team2-color); text-align: left; flex: 1;">🔵 ${t2.join(' & ') || '未定'}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                container.innerHTML = html;
+
+            } else {
+                let targetRoom = roomCode;
+                const me = allPlayers.find(p => p.id === myId);
+                if (me && me.room && me.room.startsWith('pod-')) {
+                    targetRoom = me.room;
+                    roomCode = me.room;
+                }
+
+                let podPlayers = allPlayers.filter(p => p.room === targetRoom && !p.id.startsWith('signal_'));
+                if (podPlayers.length === 0) {
+                    podPlayers = allPlayers.filter(p => !p.id.startsWith('signal_'));
+                }
+
+                let t1 = podPlayers.filter(m => parsePlayerTeam(m) === 'team-1');
+                let t2 = podPlayers.filter(m => parsePlayerTeam(m) === 'team-2');
+
+                if (t1.length === 0 && t2.length === 0) {
+                    t1 = podPlayers.filter((_, idx) => idx % 2 === 0);
+                    t2 = podPlayers.filter((_, idx) => idx % 2 !== 0);
+                }
+
+                if (myTeam === 'team-2') {
+                    if (!t2.some(p => p.id === myId)) t2.push({ id: myId, name: myName });
+                } else {
+                    if (!t1.some(p => p.id === myId)) t1.push({ id: myId, name: myName });
+                }
+
+                const podNum = targetRoom.startsWith('pod-') ? targetRoom.replace('pod-', '') : '1';
+
+                const renderPlayerTags = (list) => {
+                    if (!list || list.length === 0) {
+                        return `<div style="color:var(--text-muted); font-size:0.85rem; padding:0.4rem;">(待機中)</div>`;
+                    }
+                    return list.map(p => `
+                        <div style="background: rgba(15,23,42,0.9); border: 1px solid ${p.id === myId ? 'var(--accent-yellow)' : 'var(--border-color)'}; padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.95rem; font-weight: 800; margin-bottom: 0.35rem; width: 100%; text-align: center; color: #fff;">
+                            👤 ${p.name || 'ゲスト'} ${p.id === myId ? '<span style="color:var(--accent-yellow); font-size:0.8rem;">(あなた)</span>' : ''}
+                        </div>
+                    `).join('');
+                };
+
+                container.innerHTML = `
+                    <div style="background: rgba(30,41,59,0.95); border: 2px solid var(--border-color); border-radius: 14px; padding: 1.2rem; width: 100%;">
+                        <div style="font-size: 1.05rem; font-weight: 900; color: #38bdf8; margin-bottom: 0.8rem;">
+                            ⚔️ あなたの対戦卓: 第 ${podNum} 卓
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.8rem; align-items: center;">
+                            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                                <div style="font-size: 0.95rem; font-weight: 900; color: var(--team1-color); margin-bottom: 0.4rem;">🔴 チーム 1</div>
+                                ${renderPlayerTags(t1)}
+                            </div>
+                            <div style="font-size: 1.4rem; font-weight: 900; color: var(--accent-yellow); background: #334155; padding: 0.4rem 0.7rem; border-radius: 8px;">VS</div>
+                            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                                <div style="font-size: 0.95rem; font-weight: 900; color: var(--team2-color); margin-bottom: 0.4rem;">🔵 チーム 2</div>
+                                ${renderPlayerTags(t2)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            overlay.style.setProperty('display', 'flex', 'important');
+
+            let countdown = 4;
+            if (countdownText) countdownText.textContent = `対戦開始まで... ${countdown}`;
+
+            if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+            matchupTimerInterval = setInterval(() => {
+                countdown--;
+                if (countdownText) countdownText.textContent = `対戦開始まで... ${countdown}`;
+                sfxTick(false);
+
+                if (countdown <= 0) {
+                    clearInterval(matchupTimerInterval);
+                    overlay.style.display = 'none';
+                    if (onComplete) onComplete();
+                }
+            }, 1000);
+        }
+
+        function renderLeaderboard() {
+            const listEl = document.getElementById('leaderboard-list');
+            if (!listEl) return;
+            
+            const podNum = roomCode.replace('pod-', '');
+            let html = `<div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">🏆 [第 ${podNum} 卓] 2v2 スピード順位</div>`;
+            
+            const podPlayers = allPlayers
+                .filter(p => p.room === roomCode && !p.id.startsWith('signal_'))
+                .sort((a, b) => {
+                    if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+                    return (b.progress || 0) - (a.progress || 0);
+                });
+
+            if (podPlayers.length === 0) {
+                html += `<div class="leaderboard-item"><span>1. <strong>${myName}</strong> (あなた)</span><span>0 pts</span></div>`;
+            }
+
+            podPlayers.forEach((p, idx) => {
+                const isMe = p.id === myId;
+                const team = parsePlayerTeam(p);
+                const pill = team === 'team-1' 
+                    ? '<span class="team-tag-pill pill-team1">🔴 T1</span>' 
+                    : '<span class="team-tag-pill pill-team2">🔵 T2</span>';
+
+                let statusBadge = `${p.score || 0} pts`;
+                if (parsePlayerState(p) === 'round_finished') statusBadge = `✓ 完了 (${p.score || 0} pts)`;
+                if (parsePlayerState(p) === 'finished') statusBadge = `👑 完走! (${p.score || 0} pts)`;
+
+                html += `
+                    <div class="leaderboard-item" style="${isMe ? 'border: 1px solid var(--accent-green);' : ''}">
+                        <span>${idx + 1}. ${pill}<strong>${p.name || 'ゲスト'}</strong> ${isMe ? '(あなた)' : ''}</span>
+                        <span><strong>${statusBadge}</strong></span>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function shuffle(arr) {
+            let newArr = arr.slice();
+            for (let i = newArr.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                let temp = newArr[i];
+                newArr[i] = newArr[j];
+                newArr[j] = temp;
+            }
+            return newArr;
+        }
+
+        function startRoundWithCountdown(roundNum) {
+            try {
+                if (r4DropInterval) clearInterval(r4DropInterval);
+                if (graceTimerInterval) clearInterval(graceTimerInterval);
+                if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+                
+                currentRound = roundNum;
+                roundBaseScore = 0;
+                roundBonusScore = 0;
+                myRoundPlacement = 1;
+                finishedPlayersThisRound.clear();
+                roundHasAdvanced = false;
+
+                const roundInd = document.getElementById('round-indicator');
+                if (roundInd) roundInd.textContent = `ラウンド ${roundNum}`;
+                isInputLocked = true;
+
+                const graceBanner = document.getElementById('grace-banner');
+                if (graceBanner) graceBanner.style.display = 'none';
+
+                const r4TimerEl = document.getElementById('r4-timer-display');
+                if (r4TimerEl) r4TimerEl.style.display = 'none';
+
+                const tvIntermission = document.getElementById('tv-round-summary-overlay');
+                if (tvIntermission) tvIntermission.style.display = 'none';
+
+                const overlay = document.getElementById('instruction-overlay');
+                const roundTitle = document.getElementById('instr-round-title');
+                const mainTitle = document.getElementById('instr-main-title');
+                const body = document.getElementById('instr-body');
+                const cdNum = document.getElementById('countdown-num');
+
+                if (roundNum === 1) {
+                    if (roundTitle) roundTitle.textContent = "ラウンド 1 ルール説明";
+                    if (mainTitle) mainTitle.textContent = "スロットイン・モード";
+                    if (body) body.innerHTML = `日本語のターゲット文に合わせて、ボードから正しい英文チャンクを順番にはめ込んで全4文を完成させてください！<br><span style="color: var(--accent-yellow); font-weight: 700;">正解: +100 pts</span> / <span style="color: #f87171; font-weight: 700;">誤答: -15 pts</span><br><span style="color: #38bdf8;">着順ボーナス: 1着 +50 / 2着 +30 / 3着 +15 / 4着 +5 pts</span>`;
+                } else if (roundNum === 2) {
+                    if (roundTitle) roundTitle.textContent = "ラウンド 2 ルール説明";
+                    if (mainTitle) mainTitle.textContent = "全チャンク・スピードレース";
+                    if (body) body.innerHTML = `全4文の英文チャンクがすべてボード上にシャッフル配置されます！指示された日本語文の順に正しく英文チャンクを素早く選択してください！<br><span style="color: var(--accent-yellow); font-weight: 700;">正解: +150 pts</span> / <span style="color: #f87171; font-weight: 700;">誤答: -10 pts (連鎖リセット)</span><br><span style="color: #38bdf8;">着順ボーナス: 1着 +50 / 2着 +30 / 3着 +15 / 4着 +5 pts</span>`;
+                    initGameRound2();
+                } else if (roundNum === 3) {
+                    if (roundTitle) roundTitle.textContent = "ラウンド 3 ルール説明";
+                    if (mainTitle) mainTitle.textContent = "5択・英単語穴埋めモード";
+                    if (body) body.innerHTML = `文章の空欄に入る正しい英単語を5つの選択肢から選んで全4問を完成させてください！<br><span style="color: var(--accent-yellow); font-weight: 700;">正解: +50 pts</span> / <span style="color: #f87171; font-weight: 700;">誤答: -10 pts</span><br><span style="color: #38bdf8;">着順ボーナス: 1着 +50 / 2着 +30 / 3着 +15 / 4着 +5 pts</span>`;
+                    initGameRound3();
+                } else if (roundNum === 4) {
+                    if (roundTitle) roundTitle.textContent = "ラウンド 4 ルール説明";
+                    if (mainTitle) mainTitle.textContent = "落下チャンク・フリー文構築スコアアタック";
+                    if (body) body.innerHTML = `降ってくる英文チャンクを自由に繋げて英文を完成させよう！正しい文ができるとブロックが消えてスコア獲得！<br><span style="color: var(--accent-yellow); font-weight: 700;">⏱ 2分間の時間切れまで文を作り続けろ！</span><br><span style="color: var(--accent-green); font-weight: 700;">文完成: +150 pts</span> / <span style="color: #f87171; font-weight: 700;">誤答: -15 pts / あふれ: -100 pts (リセット)</span><br><span style="color: var(--accent-yellow); font-weight: 800;">着順ボーナス: 1着 +200 / 2着 +120 / 3着 +60 / 4着 +20 pts</span>`;
+                    initGameRound4();
+                }
+
+                if (overlay) {
+                    overlay.style.setProperty('display', 'flex', 'important');
+                }
+
+                let count = 10;
+                if (cdNum) cdNum.textContent = count;
+                sfxTick(false);
+
+                if (activeCountdownTimer) clearInterval(activeCountdownTimer);
+                activeCountdownTimer = setInterval(() => {
+                    count--;
+                    if (cdNum) cdNum.textContent = count;
+                    sfxTick(count === 0);
+
+                    if (count <= 0) {
+                        clearInterval(activeCountdownTimer);
+                        if (overlay) overlay.style.display = 'none';
+                        isInputLocked = false;
+                        if (roundNum === 4) {
+                            startR4DropLoop();
+                            startR4GameTimer();
+                        }
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error("Start round with countdown error:", e);
+            }
+        }
+
+        // ========================================================
+        // COMPLETION & GRACE PERIOD SYSTEM
+        // ========================================================
+        function getPlacementBonus(rank, isFinalRound) {
+            if (isFinalRound) {
+                if (rank === 1) return 200;
+                if (rank === 2) return 120;
+                if (rank === 3) return 60;
+                return 20;
+            } else {
+                if (rank === 1) return 50;
+                if (rank === 2) return 30;
+                if (rank === 3) return 15;
+                return 5;
+            }
+        }
+
+        async function handlePlayerFinishedRound(nextStage) {
+            isInputLocked = true;
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+
+            await fetchPlayers();
+            const podPlayers = allPlayers.filter(p => p.room === roomCode && !p.id.startsWith('signal_'));
+            
+            const dbFinishedCount = podPlayers.filter(p => {
+                const s = parsePlayerState(p);
+                const r = p.round || 1;
+                return r === currentRound && (s === 'round_finished' || s === 'finished') && p.id !== myId;
+            }).length;
+
+            const finishedCount = Math.max(dbFinishedCount, finishedPlayersThisRound.size);
+            myRoundPlacement = finishedCount + 1;
+            finishedPlayersThisRound.add(myId);
+
+            const isFinal = (nextStage === 'finished');
+            roundBonusScore = getPlacementBonus(myRoundPlacement, isFinal);
+            totalScore += roundBonusScore;
+            playerStatus = isFinal ? 'finished' : 'round_finished';
+            await savePlayers();
+
+            if (realtimeChannel) {
+                await realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'player-finished-task',
+                    payload: { room: roomCode, playerId: myId, round: currentRound, placement: myRoundPlacement }
+                });
+            }
+
+            if (myRoundPlacement === 1) {
+                if (realtimeChannel) {
+                    await realtimeChannel.send({
+                        type: 'broadcast',
+                        event: 'start-grace-period',
+                        payload: { all: true, round: currentRound }
+                    });
+                }
+                startGracePeriodUI();
+            }
+
+            const waitingOverlay = document.getElementById('player-waiting-overlay');
+            const placeText = document.getElementById('player-waiting-placement-text');
+            const bonusText = document.getElementById('waiting-bonus-val');
+
+            if (placeText) placeText.textContent = `第 ${myRoundPlacement} 着でゴール！`;
+            if (bonusText) bonusText.textContent = `+${roundBonusScore} pts`;
+            if (waitingOverlay) waitingOverlay.style.display = 'flex';
+
+            checkRoomProgress(nextStage);
+        }
+
+        function startGracePeriodUI() {
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            graceSecondsLeft = 30;
+            const banner = document.getElementById('grace-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.textContent = `⏳ 1位がゴール！残り ${graceSecondsLeft} 秒以内にクリアしよう！`;
+            }
+
+            graceTimerInterval = setInterval(() => {
+                graceSecondsLeft--;
+                if (banner) banner.textContent = `⏳ 1位がゴール！残り ${graceSecondsLeft} 秒以内にクリアしよう！`;
+                if (graceSecondsLeft <= 0) {
+                    clearInterval(graceTimerInterval);
+                    if (banner) banner.style.display = 'none';
+                    if (parsePlayerState({ status: playerStatus }) === 'playing') {
+                        playerStatus = (currentRound === 4) ? 'finished' : 'round_finished';
+                        const podPlayers = allPlayers.filter(p => p.room === roomCode && !p.id.startsWith('signal_'));
+                        const finishedCount = Math.max(
+                            podPlayers.filter(p => {
+                                const s = parsePlayerState(p);
+                                const r = p.round || 1;
+                                return r === currentRound && (s === 'round_finished' || s === 'finished') && p.id !== myId;
+                            }).length,
+                            finishedPlayersThisRound.size
+                        );
+                        myRoundPlacement = finishedCount + 1;
+                        roundBonusScore = 0;
+                        savePlayers();
+                    }
+                    finalizeRoundAdvance();
+                }
+            }, 1000);
+        }
+
+        function checkRoomProgress(nextStage) {
+            const nextRoundTarget = nextStage || (currentRound === 4 ? 'finished' : currentRound + 1);
+            if (completedRounds.has(currentRound)) return;
+
+            const activePodPlayers = allPlayers.filter(p => !p.id.startsWith('signal_') && p.room && p.room.startsWith('pod-'));
+            if (activePodPlayers.length === 0) return;
+
+            const finishedPlayers = activePodPlayers.filter(p => {
+                const s = parsePlayerState(p);
+                const r = p.round || 1;
+                return r === currentRound && (s === 'round_finished' || s === 'finished');
+            });
+
+            const myPodPlayers = allPlayers.filter(p => p.room === roomCode && !p.id.startsWith('signal_'));
+            const myPodFinished = myPodPlayers.filter(p => {
+                const s = parsePlayerState(p);
+                const r = p.round || 1;
+                return r === currentRound && (s === 'round_finished' || s === 'finished');
+            });
+
+            const progressEl = document.getElementById('waiting-room-progress');
+            if (progressEl) {
+                progressEl.textContent = `完了: ${myPodFinished.length} / ${myPodPlayers.length} 人`;
+            }
+
+            if (finishedPlayers.length >= activePodPlayers.length && (parsePlayerState({ status: playerStatus }) === 'round_finished' || parsePlayerState({ status: playerStatus }) === 'finished')) {
+                finalizeRoundAdvance(nextRoundTarget);
+            }
+        }
+
+        async function finalizeRoundAdvance(nextStage) {
+            const nextRoundTarget = nextStage || (currentRound === 4 ? 'finished' : currentRound + 1);
+            if (completedRounds.has(currentRound) || roundHasAdvanced) return;
+            completedRounds.add(currentRound);
+            roundHasAdvanced = true;
+
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+
+            const banner = document.getElementById('grace-banner');
+            if (banner) banner.style.display = 'none';
+
+            if (realtimeChannel) {
+                await realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'all-players-completed-round',
+                    payload: { all: true, round: currentRound, nextRound: nextRoundTarget }
+                });
+            }
+            showSynchronizedRoundSummary(nextRoundTarget);
+        }
+
+        // ========================================================
+        // SYNCHRONIZED INTERMISSION (Full Player Ranking & Scores)
+        // ========================================================
+        async function showSynchronizedRoundSummary(nextStage) {
+            isInputLocked = true;
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            if (intermissionTimeout) clearTimeout(intermissionTimeout);
+
+            const waitingOverlay = document.getElementById('player-waiting-overlay');
+            if (waitingOverlay) waitingOverlay.style.display = 'none';
+
+            await fetchPlayers();
+
+            if (nextStage === 'finished') {
+                showFinalScreen();
+                return;
+            }
+
+            const { t1: currentT1, t2: currentT2 } = calculateCurrentTeamScores();
+            const t1EarnedThisRound = Math.max(0, currentT1 - roundStartT1Score);
+            const t2EarnedThisRound = Math.max(0, currentT2 - roundStartT2Score);
+
+            if (!isJoinParam) {
+                const tvOverlay = document.getElementById('tv-round-summary-overlay');
+                const tvTitle = document.getElementById('tv-summary-round-title');
+                const leadBanner = document.getElementById('tv-round-lead-banner');
+                const t1RoundPts = document.getElementById('tv-summary-t1-round-pts');
+                const t2RoundPts = document.getElementById('tv-summary-t2-round-pts');
+                const breakdownEl = document.getElementById('tv-summary-pod-breakdown');
+
+                if (tvTitle) tvTitle.textContent = `ラウンド ${currentRound} 終了！結果発表`;
+                
+                if (leadBanner) {
+                    if (currentT1 > currentT2) {
+                        leadBanner.innerHTML = `<span class="team1-text">🔴 チーム 1 が +${currentT1 - currentT2} pts リード中！</span>`;
+                    } else if (currentT2 > currentT1) {
+                        leadBanner.innerHTML = `<span class="team2-text">🔵 チーム 2 が +${currentT2 - currentT1} pts リード中！</span>`;
+                    } else {
+                        leadBanner.innerHTML = `<span style="color: var(--accent-yellow);">🤝 同点白熱バトル中！ (${currentT1} pts)</span>`;
+                    }
+                }
+
+                if (t1RoundPts) t1RoundPts.textContent = `+${t1EarnedThisRound} pts (このラウンド)`;
+                if (t2RoundPts) t2RoundPts.textContent = `+${t2EarnedThisRound} pts (このラウンド)`;
+
+                animateCountUp('tv-summary-t1-score', roundStartT1Score, currentT1, 1400);
+                animateCountUp('tv-summary-t2-score', roundStartT2Score, currentT2, 1400);
+
+                if (breakdownEl) {
+                    const pods = {};
+                    allPlayers.filter(p => !p.id.startsWith('signal_') && p.room && p.room.startsWith('pod-')).forEach(p => {
+                        if (!pods[p.room]) pods[p.room] = [];
+                        pods[p.room].push(p);
+                    });
+
+                    let bHtml = '';
+                    Object.keys(pods).sort().forEach(podKey => {
+                        const podNum = podKey.replace('pod-', '');
+                        const sorted = pods[podKey].sort((a,b) => (b.score||0) - (a.score||0));
+
+                        bHtml += `
+                            <div style="background: rgba(30,41,59,0.85); border: 1px solid var(--border-color); border-radius: 10px; padding: 0.6rem; text-align: left;">
+                                <div style="font-size: 0.8rem; color: #38bdf8; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 0.2rem; margin-bottom: 0.4rem;">
+                                    第 ${podNum} 卓
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                        `;
+
+                        sorted.forEach((player, idx) => {
+                            const team = parsePlayerTeam(player);
+                            const pill = team === 'team-1' ? '<span class="team-tag-pill pill-team1">🔴</span>' : '<span class="team-tag-pill pill-team2">🔵</span>';
+                            const rPts = getPlayerRoundScore(player);
+
+                            bHtml += `
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem;">
+                                    <span>${idx + 1}位 ${pill}<strong>${player.name}</strong></span>
+                                    <span><strong style="color: var(--accent-yellow);">+${rPts}</strong> <span style="color:var(--text-muted); font-size:0.7rem;">(${player.score||0}p)</span></span>
+                                </div>
+                            `;
+                        });
+
+                        bHtml += `</div></div>`;
+                    });
+                    breakdownEl.innerHTML = bHtml;
+                }
+
+                if (tvOverlay) tvOverlay.style.setProperty('display', 'flex', 'important');
+
+            } else {
+                const overlay = document.getElementById('round-winner-overlay');
+                const titleEl = document.getElementById('round-winner-title');
+                const placeBadge = document.getElementById('round-placement-badge');
+                const baseText = document.getElementById('round-base-score-text');
+                const bonusText = document.getElementById('round-bonus-score-text');
+                const standingsListEl = document.getElementById('round-standings-list');
+
+                if (titleEl) titleEl.textContent = `ラウンド ${currentRound} 終了！`;
+                if (placeBadge) {
+                    placeBadge.textContent = roundBonusScore > 0 
+                        ? `あなたの着順: 第 ${myRoundPlacement} 着` 
+                        : `あなたの着順: 第 ${myRoundPlacement} 着 (タイムアップ)`;
+                }
+                if (baseText) baseText.textContent = `+${roundBaseScore} pts`;
+                if (bonusText) bonusText.textContent = `+${roundBonusScore} pts`;
+
+                const roundTotalEarned = roundBaseScore + roundBonusScore;
+                const prevTotal = Math.max(0, totalScore - roundTotalEarned);
+
+                animateCountUp('my-round-score-countup', 0, roundTotalEarned, 1200);
+                animateCountUp('my-total-score-countup', prevTotal, totalScore, 1200);
+
+                const podPlayers = allPlayers
+                    .filter(p => p.room === roomCode && !p.id.startsWith('signal_'))
+                    .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                if (standingsListEl) {
+                    let html = '';
+                    podPlayers.forEach((p, idx) => {
+                        const isMe = p.id === myId;
+                        const team = parsePlayerTeam(p);
+                        const pill = team === 'team-1' ? '<span class="team-tag-pill pill-team1">🔴 T1</span>' : '<span class="team-tag-pill pill-team2">🔵 T2</span>';
+                        const rPts = isMe ? roundTotalEarned : getPlayerRoundScore(p);
+
+                        html += `
+                            <div class="leaderboard-item" style="${isMe ? 'border: 1px solid var(--accent-green); background: rgba(16, 185, 129, 0.15);' : ''}">
+                                <span>${idx + 1}位 ${pill}<strong>${p.name || 'ゲスト'}</strong> ${isMe ? '(あなた)' : ''}</span>
+                                <span>
+                                    <strong style="color: var(--accent-yellow); margin-right: 0.3rem;">+${rPts} pts</strong>
+                                    <span style="color: var(--text-muted); font-size: 0.75rem;">(計 ${p.score || 0} pts)</span>
+                                </span>
+                            </div>
+                        `;
+                    });
+                    standingsListEl.innerHTML = html;
+                }
+
+                if (overlay) overlay.style.setProperty('display', 'flex', 'important');
+            }
+
+            intermissionTimeout = setTimeout(() => {
+                const tvOverlay = document.getElementById('tv-round-summary-overlay');
+                const studentOverlay = document.getElementById('round-winner-overlay');
+                if (tvOverlay) tvOverlay.style.display = 'none';
+                if (studentOverlay) studentOverlay.style.display = 'none';
+
+                playerStatus = 'playing';
+                progress = 0;
+                roundStartT1Score = currentT1;
+                roundStartT2Score = currentT2;
+                playerScoresAtRoundStart = {};
+                allPlayers.forEach(p => {
+                    playerScoresAtRoundStart[p.id] = (p.score || 0);
+                });
+
+                savePlayers();
+                
+                showMatchupOverlay(nextStage, () => startRoundWithCountdown(nextStage));
+            }, 8000);
+        }
+
+        // ========================================================
+        // ROUND 1: SLOT-IN MODE
+        // ========================================================
+        function initGameRound1() {
+            progress = 0;
+            savePlayers();
+            sentenceQueue = JSON.parse(JSON.stringify(SOURCE_SENTENCES));
+            currentSentence = sentenceQueue[0];
+            loadRound1Stage();
+        }
+
+        function loadRound1Stage() {
+            const titleEl = document.getElementById('scaffold-title-text');
+            const gridContainer = document.getElementById('chunk-grid');
+            if (titleEl) titleEl.textContent = "ターゲット（日本語訳の順序）";
+            if (gridContainer) gridContainer.className = "chunk-grid";
+            
+            gridData = [];
+            if (currentSentence && currentSentence.chunks) {
+                currentSentence.chunks.forEach((text, index) => {
+                    gridData.push({ text: text, index: index, slotted: false });
+                });
+                gridData = shuffle(gridData);
+            }
+
+            updatePromptRound1();
+            renderRound1Slots();
+            renderGridRound1();
+        }
+
+        function updatePromptRound1() {
+            const box = document.getElementById('jp-prompt-box');
+            const counterEl = document.getElementById('sentence-counter');
+            if (!box || !currentSentence) return;
+            
+            box.style.display = 'flex';
+            box.innerHTML = '';
+            if (currentSentence.jpChunks) {
+                currentSentence.jpChunks.forEach((jpText) => {
+                    const span = document.createElement('span');
+                    span.className = 'jp-chunk';
+                    span.textContent = jpText;
+                    box.appendChild(span);
+                });
+            }
+            if (counterEl) counterEl.textContent = `文 ${SOURCE_SENTENCES.length - sentenceQueue.length + 1} / ${SOURCE_SENTENCES.length}`;
+        }
+
+        function renderRound1Slots() {
+            const container = document.getElementById('active-container');
+            if (!container || !currentSentence) return;
+            container.className = 'slot-container';
+            container.innerHTML = '';
+            const currentFilledCount = gridData.filter(item => item.slotted).length;
+
+            currentSentence.chunks.forEach((_, i) => {
+                const slottedItem = gridData.find(item => item.index === i && item.slotted);
+                const slotDiv = document.createElement('div');
+                if (slottedItem) {
+                    slotDiv.className = 'filled-slot';
+                    slotDiv.textContent = slottedItem.text;
+                } else if (i === currentFilledCount) {
+                    slotDiv.className = 'empty-slot';
+                    slotDiv.textContent = `[ スロット ${i + 1} ]`;
+                } else {
+                    slotDiv.className = 'empty-slot';
+                    slotDiv.textContent = `...`;
+                }
+                container.appendChild(slotDiv);
+            });
+        }
+
+        function renderGridRound1() {
+            const container = document.getElementById('chunk-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            gridData.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'grid-btn';
+                if (item.slotted) btn.classList.add('cleared');
+                btn.textContent = item.text;
+                btn.onclick = () => handleSelectRound1(item, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleSelectRound1(item, btnEl) {
+            if (isInputLocked || item.slotted || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            const currentFilledCount = gridData.filter(i => i.slotted).length;
+
+            if (item.index === currentFilledCount) {
+                item.slotted = true;
+                sfxClick();
+                renderRound1Slots();
+                renderGridRound1();
+
+                if (gridData.every(i => i.slotted)) {
+                    totalScore += 100;
+                    roundBaseScore += 100;
+                    sfxCorrect();
+                    showFloatingScore(btnEl, '+100', true);
+
+                    setTimeout(() => {
+                        progress++;
+                        savePlayers();
+
+                        sentenceQueue.shift();
+                        if (sentenceQueue.length > 0) {
+                            currentSentence = sentenceQueue[0];
+                            loadRound1Stage();
+                        } else {
+                            handlePlayerFinishedRound(2);
+                        }
+                    }, 300);
+                }
+            } else {
+                totalScore = Math.max(0, totalScore - 15);
+                roundBaseScore = Math.max(0, roundBaseScore - 15);
+                sfxError();
+                showFloatingScore(btnEl, '-15', false);
+                savePlayers();
+
+                btnEl.classList.add('error');
+                setTimeout(() => renderGridRound1(), 350);
+            }
+        }
+
+        // ========================================================
+        // ROUND 2: ALL-CHUNKS SPEED RACE
+        // ========================================================
+        function initGameRound2() {
+            progress = 0;
+            savePlayers();
+            sentenceQueue = JSON.parse(JSON.stringify(SOURCE_SENTENCES));
+            currentSentence = sentenceQueue[0];
+            activeChain = [];
+
+            gridData = [];
+            SOURCE_SENTENCES.forEach(s => {
+                s.chunks.forEach((text, step) => {
+                    gridData.push({ text: text, sentenceId: s.id, step: step, cleared: false });
+                });
+            });
+            gridData = shuffle(gridData);
+
+            updatePromptRound2();
+            renderRound2Chain();
+            renderGridRound2();
+        }
+
+        function updatePromptRound2() {
+            const box = document.getElementById('jp-prompt-box');
+            const counterEl = document.getElementById('sentence-counter');
+            if (!box || !currentSentence) return;
+            box.style.display = 'flex';
+            box.innerHTML = '';
+            currentSentence.jpChunks.forEach((jpText) => {
+                const span = document.createElement('span');
+                span.className = 'jp-chunk';
+                span.textContent = jpText;
+                box.appendChild(span);
+            });
+            if (counterEl) counterEl.textContent = `文 ${SOURCE_SENTENCES.length - sentenceQueue.length + 1} / ${SOURCE_SENTENCES.length}`;
+        }
+
+        function renderRound2Chain() {
+            const container = document.getElementById('active-container');
+            if (!container) return;
+            container.className = 'chain-container';
+            container.innerHTML = activeChain.length === 0 ? '<div class="placeholder-hint">正しい順番でチャンクを選択してください</div>' : '';
+            activeChain.forEach(c => {
+                const tag = document.createElement('div');
+                tag.className = 'tile-tag';
+                tag.textContent = c.text;
+                container.appendChild(tag);
+            });
+        }
+
+        function renderGridRound2() {
+            const container = document.getElementById('chunk-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            gridData.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'grid-btn';
+                if (item.cleared) btn.classList.add('cleared');
+                btn.textContent = item.text;
+                btn.onclick = () => handleSelectRound2(item, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleSelectRound2(item, btnEl) {
+            if (isInputLocked || item.cleared || !currentSentence || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            const expectedStep = activeChain.length;
+
+            if (item.sentenceId === currentSentence.id && item.step === expectedStep) {
+                activeChain.push(item);
+                sfxClick();
+                renderRound2Chain();
+
+                if (activeChain.length === currentSentence.chunks.length) {
+                    totalScore += 150;
+                    roundBaseScore += 150;
+                    sfxCorrect();
+                    showFloatingScore(btnEl, '+150', true);
+
+                    setTimeout(() => {
+                        activeChain.forEach(c => c.cleared = true);
+                        progress++;
+                        savePlayers();
+
+                        activeChain = [];
+                        renderRound2Chain();
+                        renderGridRound2();
+
+                        sentenceQueue.shift();
+                        if (sentenceQueue.length === 0) {
+                            handlePlayerFinishedRound(3);
+                        } else {
+                            currentSentence = sentenceQueue[0];
+                            updatePromptRound2();
+                        }
+                    }, 200);
+                }
+            } else {
+                totalScore = Math.max(0, totalScore - 10);
+                roundBaseScore = Math.max(0, roundBaseScore - 10);
+                sfxError();
+                showFloatingScore(btnEl, '-10', false);
+                savePlayers();
+
+                btnEl.classList.add('error');
+                activeChain = [];
+                renderRound2Chain();
+                setTimeout(() => renderGridRound2(), 350);
+            }
+        }
+
+        // ========================================================
+        // ROUND 3: 5-CHOICE VOCAB CLOZE
+        // ========================================================
+        function initGameRound3() {
+            progress = 0;
+            savePlayers();
+            sentenceQueue = JSON.parse(JSON.stringify(ROUND3_QUESTIONS));
+            currentRound3Q = sentenceQueue[0];
+            loadRound3Stage();
+        }
+
+        function loadRound3Stage() {
+            const titleEl = document.getElementById('scaffold-title-text');
+            const counterEl = document.getElementById('sentence-counter');
+            const promptBox = document.getElementById('jp-prompt-box');
+            const container = document.getElementById('active-container');
+
+            if (titleEl) titleEl.textContent = "英単語 穴埋め問題";
+            if (counterEl) counterEl.textContent = `問題 ${ROUND3_QUESTIONS.length - sentenceQueue.length + 1} / ${ROUND3_QUESTIONS.length}`;
+            if (promptBox) promptBox.style.display = 'none';
+
+            if (container) {
+                container.className = 'blank-stage';
+                container.innerHTML = `<div class="blank-sentence-display">${currentRound3Q.fullText.replace('[BLANK]', '<span class="blank-word-slot">______</span>')}</div>`;
+            }
+
+            renderRound3Options();
+        }
+
+        function renderRound3Options() {
+            const container = document.getElementById('chunk-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'round3-interaction-area';
+            const optionsGrid = document.createElement('div');
+            optionsGrid.className = 'word-options-grid';
+
+            shuffle(currentRound3Q.options).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'word-btn';
+                btn.innerHTML = `<span class="word-btn-en">${opt.en}</span><span class="word-btn-jp">${opt.jp}</span>`;
+                btn.onclick = () => handleSelectRound3(opt.en, btn);
+                optionsGrid.appendChild(btn);
+            });
+
+            wrapper.appendChild(optionsGrid);
+            container.appendChild(wrapper);
+        }
+
+        function handleSelectRound3(selectedWord, btnEl) {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            if (selectedWord === currentRound3Q.targetWord) {
+                totalScore += 50;
+                roundBaseScore += 50;
+                sfxCorrect();
+                showFloatingScore(btnEl, '+50', true);
+                progress++;
+                savePlayers();
+
+                sentenceQueue.shift();
+                if (sentenceQueue.length === 0) {
+                    handlePlayerFinishedRound(4);
+                } else {
+                    currentRound3Q = sentenceQueue[0];
+                    loadRound3Stage();
+                }
+            } else {
+                totalScore = Math.max(0, totalScore - 10);
+                roundBaseScore = Math.max(0, roundBaseScore - 10);
+                sfxError();
+                showFloatingScore(btnEl, '-10', false);
+                savePlayers();
+
+                btnEl.classList.add('error');
+                setTimeout(() => btnEl.classList.remove('error'), 350);
+            }
+        }
+
+        // ========================================================
+        // ROUND 4: FALLING CHUNK DROP BATTLE (3 Columns x 4 Rows)
+        // ========================================================
+        function initGameRound4() {
+            progress = 0;
+            savePlayers();
+
+            r4ActiveBlocks = [];
+            r4ShelfTiles = [];
+
+            seedR4BottomRow();
+            loadRound4Stage();
+        }
+
+        function seedR4BottomRow() {
+            r4ActiveBlocks = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                let text = R4_ALL_CHUNKS[Math.floor(Math.random() * R4_ALL_CHUNKS.length)];
+                r4ActiveBlocks.push({
+                    id: 'r4_' + Math.random().toString(36).substring(2, 8),
+                    text: text,
+                    col: c,
+                    row: R4_ROWS - 1
+                });
+            }
+        }
+
+        function getR4ChunkCandidate() {
+            const shelfTexts = r4ShelfTiles.map(t => t.text);
+            const boardTexts = r4ActiveBlocks.map(b => b.text);
+
+            if (shelfTexts.length > 0 && Math.random() < 0.70) {
+                for (const sentence of SOURCE_SENTENCES) {
+                    const shelfMatches = sentence.chunks.filter(chk => shelfTexts.includes(chk));
+                    if (shelfMatches.length > 0 && shelfMatches.length < sentence.chunks.length) {
+                        const missingForShelf = sentence.chunks.filter(chk => !shelfTexts.includes(chk));
+                        if (missingForShelf.length > 0) {
+                            return missingForShelf[Math.floor(Math.random() * missingForShelf.length)];
+                        }
+                    }
+                }
+            }
+
+            if (Math.random() < 0.50) {
+                const partialSentences = [];
+                for (const sentence of SOURCE_SENTENCES) {
+                    const presentCount = sentence.chunks.filter(chk => boardTexts.includes(chk) || shelfTexts.includes(chk)).length;
+                    if (presentCount > 0 && presentCount < sentence.chunks.length) {
+                        const missingChunks = sentence.chunks.filter(chk => !boardTexts.includes(chk) && !shelfTexts.includes(chk));
+                        if (missingChunks.length > 0) {
+                            partialSentences.push(...missingChunks);
+                        }
+                    }
+                }
+                if (partialSentences.length > 0) {
+                    return partialSentences[Math.floor(Math.random() * partialSentences.length)];
+                }
+            }
+
+            return R4_ALL_CHUNKS[Math.floor(Math.random() * R4_ALL_CHUNKS.length)];
+        }
+
+        function loadRound4Stage() {
+            const titleEl = document.getElementById('scaffold-title-text');
+            const counterEl = document.getElementById('sentence-counter');
+            const promptBox = document.getElementById('jp-prompt-box');
+            const activeContainer = document.getElementById('active-container');
+            const gridContainer = document.getElementById('chunk-grid');
+            const r4TimerEl = document.getElementById('r4-timer-display');
+
+            if (titleEl) titleEl.textContent = "フリー文構築スコアアタック（制限時間内に英文を作り続けろ！）";
+            if (counterEl) counterEl.textContent = `完成: ${progress} 文`;
+            if (r4TimerEl) r4TimerEl.style.display = 'block';
+
+            if (promptBox) {
+                promptBox.style.display = 'none';
+            }
+
+            if (activeContainer) {
+                activeContainer.className = '';
+                activeContainer.innerHTML = `<div id="r4-matrix" class="r4-matrix"></div>`;
+            }
+
+            if (gridContainer) {
+                gridContainer.className = '';
+                gridContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem; width: 100%;">
+                        <div class="r4-shelf-container" id="r4-shelf">
+                            <span class="placeholder-hint">降ってきたチャンクをタップしてここに並べる...</span>
+                        </div>
+                        <div id="r4-feedback" style="min-height: 20px; font-size: 0.85rem; font-weight: 700; text-align: center;"></div>
+                        <div class="r4-controls-row">
+                            <button type="button" class="action-btn" style="background: #334155; flex: 1;" onclick="clearR4Shelf()">クリア</button>
+                            <button type="button" class="action-btn action-btn-green" style="flex: 2;" onclick="checkR4Sentence()">判定する 🚀</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderR4Game();
+        }
+
+        function startR4GameTimer() {
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            r4SecondsLeft = 120;
+            updateR4TimerDisplay();
+
+            r4GameTimerInterval = setInterval(() => {
+                if (currentRound !== 4 || isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+                r4SecondsLeft--;
+                updateR4TimerDisplay();
+
+                if (r4SecondsLeft <= 10 && r4SecondsLeft > 0) {
+                    sfxTick(false);
+                }
+
+                if (r4SecondsLeft <= 0) {
+                    clearInterval(r4GameTimerInterval);
+                    sfxTick(true);
+                    handleR4TimeExpired();
+                }
+            }, 1000);
+        }
+
+        function updateR4TimerDisplay() {
+            const timerEl = document.getElementById('r4-timer-display');
+            if (!timerEl) return;
+            const mins = Math.floor(Math.max(0, r4SecondsLeft) / 60);
+            const secs = Math.max(0, r4SecondsLeft) % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            timerEl.textContent = `⏱ ${formatted}`;
+            if (r4SecondsLeft <= 15) {
+                timerEl.style.color = 'var(--accent-red)';
+                timerEl.style.borderColor = 'var(--accent-red)';
+            } else {
+                timerEl.style.color = 'var(--accent-yellow)';
+                timerEl.style.borderColor = 'var(--border-color)';
+            }
+        }
+
+        function handleR4TimeExpired() {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished' || parsePlayerState({ status: playerStatus }) === 'finished') return;
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            isInputLocked = true;
+            const feedbackEl = document.getElementById('r4-feedback');
+            if (feedbackEl) {
+                feedbackEl.innerHTML = `<span style="color: var(--accent-red);">⏰ タイムアップ！2分が経過しました</span>`;
+            }
+            handlePlayerFinishedRound('finished');
+        }
+
+        function startR4DropLoop() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            r4DropInterval = setInterval(() => {
+                if (currentRound !== 4 || isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+                spawnR4Block();
+            }, 2600);
+        }
+
+        function spawnR4Block() {
+            let availableCols = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                if (!r4ActiveBlocks.some(b => b.col === c && b.row === 0)) {
+                    availableCols.push(c);
+                }
+            }
+
+            if (availableCols.length === 0) {
+                handleR4Overflow();
+                return;
+            }
+
+            let randomCol = availableCols[Math.floor(Math.random() * availableCols.length)];
+            let chunkText = getR4ChunkCandidate();
+
+            let targetRow = -1;
+            for (let r = R4_ROWS - 1; r >= 0; r--) {
+                if (!r4ActiveBlocks.some(b => b.col === randomCol && b.row === r)) {
+                    targetRow = r;
+                    break;
+                }
+            }
+
+            if (targetRow === -1) {
+                handleR4Overflow();
+                return;
+            }
+
+            r4ActiveBlocks.push({
+                id: 'r4_' + Math.random().toString(36).substring(2, 8),
+                text: chunkText,
+                col: randomCol,
+                row: targetRow
+            });
+
+            renderR4Game();
+
+            if (targetRow === 0) {
+                setTimeout(() => {
+                    handleR4Overflow();
+                }, 350);
+            }
+        }
+
+        function applyR4Gravity() {
+            for (let c = 0; c < R4_COLS; c++) {
+                let colBlocks = r4ActiveBlocks.filter(b => b.col === c);
+                colBlocks.sort((a, b) => b.row - a.row);
+                let writeRow = R4_ROWS - 1;
+                for (let block of colBlocks) {
+                    block.row = writeRow;
+                    writeRow--;
+                }
+            }
+        }
+
+        function handleR4Overflow() {
+            totalScore = Math.max(0, totalScore - 100);
+            roundBaseScore = Math.max(0, roundBaseScore - 100);
+            sfxOverflow();
+            savePlayers();
+
+            const matrixEl = document.getElementById('r4-matrix');
+            if (matrixEl) {
+                showFloatingScore(matrixEl, '-100 盤面あふれ!', false);
+                matrixEl.classList.remove('shake');
+                void matrixEl.offsetWidth;
+                matrixEl.classList.add('shake');
+                setTimeout(() => matrixEl.classList.remove('shake'), 600);
+            }
+
+            const feedbackEl = document.getElementById('r4-feedback');
+            if (feedbackEl) {
+                feedbackEl.innerHTML = `<span style="color: #f87171; font-weight: 800;">💥 盤面がいっぱいになりました！ (-100 pts) 底3ブロックにリセット</span>`;
+                setTimeout(() => { if (feedbackEl) feedbackEl.innerHTML = ''; }, 2500);
+            }
+
+            seedR4BottomRow();
+            r4ShelfTiles = [];
+            renderR4Game();
+        }
+
+        function renderR4Game() {
+            const matrix = document.getElementById('r4-matrix');
+            const shelf = document.getElementById('r4-shelf');
+            if (!matrix || !shelf) return;
+
+            matrix.innerHTML = '';
+
+            let cellW = matrix.clientWidth / R4_COLS;
+            let cellH = matrix.clientHeight / R4_ROWS;
+
+            r4ActiveBlocks.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'r4-block';
+                el.innerText = b.text;
+                el.style.left = (b.col * cellW + 4) + 'px';
+                el.style.top = (b.row * cellH + 4) + 'px';
+                el.style.width = (cellW - 8) + 'px';
+                el.style.height = (cellH - 8) + 'px';
+
+                if (b.text.length > 40) {
+                    el.style.fontSize = '0.78rem';
+                    el.style.lineHeight = '1.2';
+                } else if (b.text.length > 22) {
+                    el.style.fontSize = '0.86rem';
+                    el.style.lineHeight = '1.25';
+                } else {
+                    el.style.fontSize = '0.98rem';
+                    el.style.lineHeight = '1.3';
+                }
+
+                el.onclick = () => handleR4BlockTap(b);
+                matrix.appendChild(el);
+            });
+
+            shelf.innerHTML = '';
+            if (r4ShelfTiles.length === 0) {
+                shelf.innerHTML = '<span class="placeholder-hint">降ってきたチャンクをタップしてここに並べる...</span>';
+            } else {
+                r4ShelfTiles.forEach((tile, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'r4-shelf-tile';
+                    tag.innerText = tile.text;
+                    tag.title = "タップして戻す";
+                    tag.onclick = () => handleR4ShelfTileTap(index);
+                    shelf.appendChild(tag);
+                });
+            }
+        }
+
+        function handleR4BlockTap(block) {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            let idx = r4ActiveBlocks.findIndex(b => b.id === block.id);
+            if (idx === -1) return;
+
+            sfxClick();
+            let moved = r4ActiveBlocks.splice(idx, 1)[0];
+            r4ShelfTiles.push(moved);
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function handleR4ShelfTileTap(tileIndex) {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            sfxClick();
+            let returned = r4ShelfTiles.splice(tileIndex, 1)[0];
+
+            let emptyCols = [];
+            for (let c = 0; c < R4_COLS; c++) {
+                if (!r4ActiveBlocks.some(b => b.col === c && b.row === 0)) emptyCols.push(c);
+            }
+            let targetCol = emptyCols.length > 0 ? emptyCols[0] : 0;
+            returned.col = targetCol;
+            returned.row = 0;
+
+            r4ActiveBlocks.push(returned);
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function clearR4Shelf() {
+            if (isInputLocked || r4ShelfTiles.length === 0) return;
+            sfxClick();
+            r4ShelfTiles.forEach(t => {
+                t.row = 0;
+                t.col = Math.floor(Math.random() * R4_COLS);
+                r4ActiveBlocks.push(t);
+            });
+            r4ShelfTiles = [];
+            applyR4Gravity();
+            renderR4Game();
+        }
+
+        function checkR4Sentence() {
+            if (isInputLocked || parsePlayerState({ status: playerStatus }) === 'round_finished') return;
+            const feedbackEl = document.getElementById('r4-feedback');
+
+            const matched = SOURCE_SENTENCES.find(s => 
+                s.chunks.length === r4ShelfTiles.length &&
+                s.chunks.every((chk, idx) => r4ShelfTiles[idx].text === chk)
+            );
+
+            if (matched) {
+                totalScore += 150;
+                roundBaseScore += 150;
+                progress++;
+                sfxCorrect();
+                savePlayers();
+
+                if (feedbackEl) {
+                    showFloatingScore(feedbackEl, '+150 正解!', true);
+                    feedbackEl.innerHTML = `<span style="color: var(--accent-green);">🎉 正解！文を完成させました！ (+150 pts)</span>`;
+                }
+
+                const counterEl = document.getElementById('sentence-counter');
+                if (counterEl) counterEl.textContent = `完成: ${progress} 文`;
+
+                r4ShelfTiles = [];
+                renderR4Game();
+
+                setTimeout(() => {
+                    if (feedbackEl) feedbackEl.innerHTML = '';
+                }, 1200);
+            } else {
+                totalScore = Math.max(0, totalScore - 15);
+                roundBaseScore = Math.max(0, roundBaseScore - 15);
+                sfxError();
+                savePlayers();
+                if (feedbackEl) {
+                    showFloatingScore(feedbackEl, '-15', false);
+                    feedbackEl.innerHTML = `<span style="color: #f87171;">❌ 順序または組み合わせが違います！</span>`;
+                }
+            }
+        }
+
+        // ========================================================
+        // 6. FINAL TEAM WINNER & COMPLETION SCREEN
+        // ========================================================
+        async function showFinalScreen() {
+            if (r4DropInterval) clearInterval(r4DropInterval);
+            if (graceTimerInterval) clearInterval(graceTimerInterval);
+            if (r4GameTimerInterval) clearInterval(r4GameTimerInterval);
+            if (matchupTimerInterval) clearInterval(matchupTimerInterval);
+            if (intermissionTimeout) clearTimeout(intermissionTimeout);
+            stopBGM();
+            sfxVictory();
+            await fetchPlayers();
+
+            const gameContent = document.getElementById('game-content');
+            const endOverlay = document.getElementById('end-overlay');
+            const finalTeamBanner = document.getElementById('final-team-winner-banner');
+            const finalMsg = document.getElementById('final-rank-msg');
+            const roundWinnerOverlay = document.getElementById('round-winner-overlay');
+            const tvIntermission = document.getElementById('tv-round-summary-overlay');
+            const matchupOverlay = document.getElementById('matchup-overlay');
+
+            if (roundWinnerOverlay) roundWinnerOverlay.style.display = 'none';
+            if (tvIntermission) tvIntermission.style.display = 'none';
+            if (matchupOverlay) matchupOverlay.style.display = 'none';
+
+            const { t1: t1Total, t2: t2Total } = calculateCurrentTeamScores();
+
+            if (finalTeamBanner) {
+                if (t1Total > t2Total) {
+                    finalTeamBanner.innerHTML = `<span class="team1-text">🏆 チーム1 (Red) の総合勝利！ (${t1Total} pts vs ${t2Total} pts)</span>`;
+                } else if (t2Total > t1Total) {
+                    finalTeamBanner.innerHTML = `<span class="team2-text">🏆 チーム2 (Blue) の総合勝利！ (${t2Total} pts vs ${t1Total} pts)</span>`;
+                } else {
+                    finalTeamBanner.innerHTML = `<span style="color:var(--accent-yellow);">🤝 同点引き分け！ (${t1Total} pts)</span>`;
+                }
+            }
+
+            if (!isJoinParam) {
+                if (finalMsg) {
+                    finalMsg.innerHTML = `
+                        全対戦卓の激闘が終了しました！<br>
+                        🔴 チーム1: <strong>${t1Total} pts</strong> | 🔵 チーム2: <strong>${t2Total} pts</strong>
+                    `;
+                }
+            } else {
+                const podPlayers = allPlayers
+                    .filter(p => p.room === roomCode && !p.id.startsWith('signal_'))
+                    .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                const myIndex = podPlayers.findIndex(p => p.id === myId);
+                const myRank = myIndex !== -1 ? myIndex + 1 : 1;
+                const myFinalScore = (myIndex !== -1 && podPlayers[myIndex].score !== undefined) ? podPlayers[myIndex].score : totalScore;
+
+                if (finalMsg) {
+                    finalMsg.innerHTML = `
+                        あなたの所属: <strong>${myTeam === 'team-1' ? '🔴 チーム1' : '🔵 チーム2'}</strong><br>
+                        卓内個人順位: <strong>${myRank}位 / ${podPlayers.length}人</strong><br>
+                        個人最終スコア: <span style="font-size: 1.3rem; color: var(--accent-green); font-weight: 800;">${myFinalScore} pts</span>
+                    `;
+                }
+            }
+
+            if (gameContent) gameContent.style.display = 'none';
+            if (endOverlay) endOverlay.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
